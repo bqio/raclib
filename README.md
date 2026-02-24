@@ -5,13 +5,8 @@
 ## Установка
 
 ```bash
-# Установка master ветки репозитория
-pip install git+https://github.com/bqio/raclib.git
+pip install raclib
 ```
-
-## API
-
-https://bqio.github.io/raclib/
 
 ## Примеры
 
