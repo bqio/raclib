@@ -8,6 +8,10 @@
 pip install raclib
 ```
 
+## API
+
+https://bqio.github.io/raclib/
+
 ## Примеры
 
 Получение списка кластеров.
