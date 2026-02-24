@@ -49,12 +49,10 @@ infobase = rc.Infobase.create(
 print(infobase)
 ```
 
-Пример `async` реализации **[В разработке]**.
+Пример `async` реализации.
 
 ```python
-from raclib.asynchronous.client import AsyncClient
-from raclib.asynchronous.session import AsyncSession
-from raclib.asynchronous.cmd.cluster import AsyncCluster
+from raclib import AsyncClient, AsyncSession, AsyncCluster
 
 import os
 import asyncio
@@ -80,9 +78,9 @@ async def main():
     results = await asyncio.gather(*tasks)
 
     for result in results:
-        print(result)
+        print(result)  # В 3 раза быстрее, чем синхронный
 
 
 if __name__ == "__main__":
-    asyncio.run(main()) # в 3 раза быстрее sync
+    asyncio.run(main())
 ```

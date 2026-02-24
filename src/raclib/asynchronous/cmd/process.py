@@ -1,18 +1,18 @@
-from .command import Command, Arg, Flag
-from ..session import Session
+from ...cmd.command import Command, Arg, Flag
+from ..session import AsyncSession
 
 
-class Process:
+class AsyncProcess:
     @staticmethod
-    def info(
-        session: Session,
+    async def info(
+        session: AsyncSession,
         cluster: str,
         process: str,
         licenses: bool = False,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
     ):
-        return session.exec(
+        output = await session.async_exec(
             Command(
                 Arg("process"),
                 Arg(cluster, "--cluster={}"),
@@ -22,18 +22,19 @@ class Process:
                 Arg(process, "--process={}"),
                 Flag(licenses, "--licenses"),
             )
-        ).to_dict()
+        )
+        return output.to_dict()
 
     @staticmethod
-    def list(
-        session: Session,
+    async def list(
+        session: AsyncSession,
         cluster: str,
         server: str,
         licenses: bool = False,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
     ):
-        return session.exec(
+        output = await session.async_exec(
             Command(
                 Arg("process"),
                 Arg(cluster, "--cluster={}"),
@@ -43,4 +44,5 @@ class Process:
                 Arg(server, "--server={}"),
                 Flag(licenses, "--licenses"),
             )
-        ).to_list()
+        )
+        return output.to_list()

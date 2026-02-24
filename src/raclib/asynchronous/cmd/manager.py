@@ -1,46 +1,42 @@
-from .command import Command, Arg, Flag
-from ..session import Session
+from ...cmd.command import Command, Arg
+from ..session import AsyncSession
 
 
-class Process:
+class AsyncManager:
     @staticmethod
-    def info(
-        session: Session,
+    async def info(
+        session: AsyncSession,
         cluster: str,
-        process: str,
-        licenses: bool = False,
+        manager: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
     ):
-        return session.exec(
+        output = await session.async_exec(
             Command(
-                Arg("process"),
+                Arg("manager"),
                 Arg(cluster, "--cluster={}"),
                 Arg(cluster_user, "--cluster-user={}"),
                 Arg(cluster_pwd, "--cluster-pwd={}"),
                 Arg("info"),
-                Arg(process, "--process={}"),
-                Flag(licenses, "--licenses"),
+                Arg(manager, "--manager={}"),
             )
-        ).to_dict()
+        )
+        return output.to_dict()
 
     @staticmethod
-    def list(
-        session: Session,
+    async def list(
+        session: AsyncSession,
         cluster: str,
-        server: str,
-        licenses: bool = False,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
     ):
-        return session.exec(
+        output = await session.async_exec(
             Command(
-                Arg("process"),
+                Arg("manager"),
                 Arg(cluster, "--cluster={}"),
                 Arg(cluster_user, "--cluster-user={}"),
                 Arg(cluster_pwd, "--cluster-pwd={}"),
                 Arg("list"),
-                Arg(server, "--server={}"),
-                Flag(licenses, "--licenses"),
             )
-        ).to_list()
+        )
+        return output.to_list()
