@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "raclib"
+version = "8.3.27.1936"
+description = "Библиотека на языке Python, которая позволяет взаимодействовать с сервером администрирования 1С через утилиту RAC, предоставляя соответствующие сущности."
+readme = "README.md"
+authors = [
+    {name = "bqio", email = "dmitry.mikhaltsov98@gmail.com"},
+]
+license = {text = "MIT"}
+requires-python = "3.12"
+
+[project.urls]
+Homepage = "https://github.com/bqio/raclib"
+Repository = "https://github.com/bqio/raclib.git"
+
+[tool.setuptools.packages.find]
+where = ["src"]
