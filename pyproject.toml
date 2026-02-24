@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "raclib"
-version = "8.3.27.1936"
+version = "1.0.0"
 description = "Библиотека на языке Python, которая позволяет взаимодействовать с сервером администрирования 1С через утилиту RAC, предоставляя соответствующие сущности."
 readme = "README.md"
 authors = [
