@@ -51,12 +51,18 @@ REQUIRED_FILES = (
     "raclib/asynchronous/client.py",
 )
 
-#: Код проверки импорта: выполняется в отдельном процессе с PYTHONPATH на
-#: распакованное колесо, чтобы импорт шёл из колеса, а не из рабочего каталога.
+#: Код проверки импорта: выполняется в отдельном процессе, куда путь к
+#: распакованному колесу передаётся аргументом и вставляется в ``sys.path``
+#: вручную. Полагаться на ``PYTHONPATH`` нельзя: на Windows-раннере он вёл себя
+#: иначе, чем на Ubuntu, и шаг падал по причинам, не связанным с кодом.
 IMPORT_CHECK = (
-    "import pathlib, raclib, raclib.asynchronous as asynchronous; "
+    "import pathlib, sys; "
+    "sys.path.insert(0, sys.argv[1]); "
+    "import raclib, raclib.asynchronous as asynchronous; "
     "root = pathlib.Path(raclib.__file__).resolve().parent; "
-    "assert (root / 'py.typed').exists(), 'py.typed не найден рядом с пакетом'; "
+    "installed = pathlib.Path(sys.argv[1]).resolve() / 'raclib'; "
+    "assert root == installed, f'импорт пришёл не из колеса: {root}'; "
+    "assert (root / 'py.typed').exists(), 'py.typed нет рядом с пакетом'; "
     "assert raclib.Client is asynchronous.AsyncClient, 'ветки разошлись'; "
     "print('колесо импортируется:', raclib.Session.__name__, '| файл:', root)"
 )
@@ -98,21 +104,31 @@ def check_import(wheel: Path) -> int:
             archive.extractall(target)
 
         environment = dict(os.environ)
-        environment["PYTHONPATH"] = str(target)
-        # Рабочий каталог репозитория убираем из пути поиска, чтобы импорт
-        # не мог случайно подхватить src/raclib.
-        completed = subprocess.run(
-            [sys.executable, "-c", IMPORT_CHECK],
-            cwd=target,
-            env=environment,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-        )
+        # PYTHONPATH очищаем: путь передаётся аргументом, чтобы импорт не мог
+        # подхватить raclib из рабочего каталога или из установленного пакета.
+        environment.pop("PYTHONPATH", None)
+        try:
+            completed = subprocess.run(
+                [sys.executable, "-c", IMPORT_CHECK, str(target)],
+                cwd=target,
+                env=environment,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+            )
+        except OSError as exc:  # pragma: no cover - защитная сетка
+            print(f"Не удалось запустить проверку импорта: {exc}", file=sys.stderr)
+            return 1
+
         if completed.stdout.strip():
             print(completed.stdout.strip())
         if completed.returncode != 0:
-            print(completed.stderr.strip(), file=sys.stderr)
+            print("Проверка импорта из колеса не прошла.", file=sys.stderr)
+            if completed.stderr.strip():
+                print(completed.stderr.strip(), file=sys.stderr)
+            print(f"  python: {sys.executable}", file=sys.stderr)
+            print(f"  распаковано в: {target}", file=sys.stderr)
+            print(f"  содержимое: {sorted(p.name for p in target.iterdir())}", file=sys.stderr)
         return completed.returncode
 
 
