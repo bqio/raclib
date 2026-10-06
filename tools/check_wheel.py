@@ -19,8 +19,6 @@
 from __future__ import annotations
 
 import argparse
-import os
-import subprocess
 import sys
 import tempfile
 import zipfile
@@ -49,22 +47,6 @@ REQUIRED_FILES = (
     "raclib/asynchronous/errors.py",
     "raclib/asynchronous/session.py",
     "raclib/asynchronous/client.py",
-)
-
-#: Код проверки импорта: выполняется в отдельном процессе, куда путь к
-#: распакованному колесу передаётся аргументом и вставляется в ``sys.path``
-#: вручную. Полагаться на ``PYTHONPATH`` нельзя: на Windows-раннере он вёл себя
-#: иначе, чем на Ubuntu, и шаг падал по причинам, не связанным с кодом.
-IMPORT_CHECK = (
-    "import pathlib, sys; "
-    "sys.path.insert(0, sys.argv[1]); "
-    "import raclib, raclib.asynchronous as asynchronous; "
-    "root = pathlib.Path(raclib.__file__).resolve().parent; "
-    "installed = pathlib.Path(sys.argv[1]).resolve() / 'raclib'; "
-    "assert root == installed, f'импорт пришёл не из колеса: {root}'; "
-    "assert (root / 'py.typed').exists(), 'py.typed нет рядом с пакетом'; "
-    "assert raclib.Client is asynchronous.AsyncClient, 'ветки разошлись'; "
-    "print('колесо импортируется:', raclib.Session.__name__, '| файл:', root)"
 )
 
 
@@ -97,39 +79,54 @@ def check_contents(wheel: Path) -> list[str]:
 
 
 def check_import(wheel: Path) -> int:
-    """Распаковывает колесо и импортирует пакет из него."""
+    """Распаковывает колесо и импортирует пакет из него.
+
+    Импорт выполняется **в текущем процессе** через ``sys.path`` и
+    ``importlib``: отдельный подпроцесс на Windows-раннере давал сбои, не
+    связанные с кодом, а распаковка и добавление пути в ``sys.path`` работают
+    одинаково на всех платформах.
+    """
+    import importlib
+
     with tempfile.TemporaryDirectory() as directory:
         target = Path(directory) / "wheel"
         with zipfile.ZipFile(wheel) as archive:
             archive.extractall(target)
 
-        environment = dict(os.environ)
-        # PYTHONPATH очищаем: путь передаётся аргументом, чтобы импорт не мог
-        # подхватить raclib из рабочего каталога или из установленного пакета.
-        environment.pop("PYTHONPATH", None)
+        # Импортируем из распакованного колеса: чистим кэш и добавляем путь.
+        importlib.invalidate_caches()
+        sys.path.insert(0, str(target))
+        for name in [key for key in sys.modules if key == "raclib" or key.startswith("raclib.")]:
+            del sys.modules[name]
+
         try:
-            completed = subprocess.run(
-                [sys.executable, "-c", IMPORT_CHECK, str(target)],
-                cwd=target,
-                env=environment,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
+            import raclib
+            from raclib import asynchronous
+        except Exception as exc:  # noqa: BLE001 - нужен любой сбой импорта
+            print(f"Импорт из колеса не удался: {type(exc).__name__}: {exc}", file=sys.stderr)
+            print(f"  каталог: {target}", file=sys.stderr)
+            print(f"  содержимое: {sorted(p.name for p in target.iterdir())}", file=sys.stderr)
+            return 1
+        finally:
+            sys.path.remove(str(target))
+
+        root = Path(raclib.__file__).resolve().parent
+        expected = target.resolve() / "raclib"
+        if root != expected:
+            print(
+                f"Импорт пришёл не из колеса: {root} вместо {expected}",
+                file=sys.stderr,
             )
-        except OSError as exc:  # pragma: no cover - защитная сетка
-            print(f"Не удалось запустить проверку импорта: {exc}", file=sys.stderr)
+            return 1
+        if not (root / "py.typed").exists():
+            print("py.typed нет рядом с импортированным пакетом", file=sys.stderr)
+            return 1
+        if raclib.Client is not asynchronous.AsyncClient:
+            print("Синхронная и асинхронная ветки используют разные Client", file=sys.stderr)
             return 1
 
-        if completed.stdout.strip():
-            print(completed.stdout.strip())
-        if completed.returncode != 0:
-            print("Проверка импорта из колеса не прошла.", file=sys.stderr)
-            if completed.stderr.strip():
-                print(completed.stderr.strip(), file=sys.stderr)
-            print(f"  python: {sys.executable}", file=sys.stderr)
-            print(f"  распаковано в: {target}", file=sys.stderr)
-            print(f"  содержимое: {sorted(p.name for p in target.iterdir())}", file=sys.stderr)
-        return completed.returncode
+        print(f"колесо импортируется: {raclib.Session.__name__} | файл: {root}")
+        return 0
 
 
 def main(argv: list[str] | None = None) -> int:
