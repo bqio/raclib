@@ -4,11 +4,27 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "raclib"
-version = "1.1.1"
+version = "1.2.0"
 description = "Библиотека на языке Python, которая позволяет взаимодействовать с сервером администрирования 1С через утилиту RAC, предоставляя соответствующие сущности."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "MIT"
+
+keywords = ["1c", "1cv8", "rac", "cluster", "enterprise", "administration"]
+# Классификатор "License :: OSI Approved :: MIT License" не указывается
+# сознательно: setuptools >= 77 запрещает его вместе с SPDX-выражением
+# `license = "MIT"` (PEP 639) и падает на этом при сборке.
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: System Administrators",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: System :: Systems Administration",
+    "Typing :: Typed",
+]
 
 authors = [
     { name = "bqio", email = "dmitry.mikhaltsov98@gmail.com" }
@@ -17,9 +33,63 @@ authors = [
 [project.urls]
 Homepage = "https://github.com/bqio/raclib"
 Repository = "https://github.com/bqio/raclib"
+Documentation = "https://bqio.github.io/raclib/"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+# Пакет полностью типизирован: аннотации должны быть видны mypy у потребителей.
+[tool.setuptools.package-data]
+raclib = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# D1xx — «докстринг обязателен». Полный набор D (D2xx/D4xx) сознательно не
+# включён: он требует строгого Google-формата в каждом докстринге, включая
+# секцию Args у методов с *args, что для этой библиотеки шум, а не польза.
+# Цель правила — чтобы новый публичный API не появился в документации без
+# описания. Публичная поверхность здесь — классы и их методы; __init__ и
+# dunder-методы описаны в докстринге самого класса.
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "D1"]
+ignore = [
+    "E501",   # длину строк контролирует форматтер
+    "D203",   # конфликтует с D211
+    "D213",   # конфликтует с D212
+    "D105",   # magic-методы описываются вместе с классом
+    "D107",   # __init__ описывается вместе с классом
+    "D417",   # секция Args у методов с *args (классы ошибок из stderr)
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+# Генерируемые деревья: источник — синхронная ветка, построчный линт не нужен.
+"src/raclib/asynchronous/cmd/*" = ["D"]
+# Пакеты-реэкспорты: module docstring не нужен, содержимое — один импорт.
+"src/raclib/__init__.py" = ["D104"]
+"src/raclib/asynchronous/__init__.py" = ["D104"]
+"src/raclib/asynchronous/cmd/__init__.py" = ["D104"]
+"src/raclib/cmd/__init__.py" = ["D104"]
+"tests/*" = ["D100", "D101", "D102", "D103", "D104", "D105", "D107"]
+"tools/*" = ["D100", "D103", "D107"]

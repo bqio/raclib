@@ -1,8 +1,17 @@
-from ...cmd.command import Command, Arg
+"""Менеджеры кластера.
+
+Соответствует разделу ``rac manager``."""
+
+from __future__ import annotations
+
+from ..._shared import RacRecord
+from ...cmd.command import Arg, Command
 from ..session import AsyncSession
 
 
 class AsyncManager:
+    """Менеджеры кластера.
+    """
     @staticmethod
     async def info(
         session: AsyncSession,
@@ -10,8 +19,23 @@ class AsyncManager:
         manager: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
-        output = await session.async_exec(
+    ) -> RacRecord:
+        """Возвращает сведения о менеджере кластера.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            manager: Идентификатор менеджера.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            dict[str, str | int]: одна запись RAC. Ключи соответствуют полям вывода, дефисы заменены на подчёркивания, числовые значения приведены к ``int``.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
+        return await session.async_exec(
             Command(
                 Arg("manager"),
                 Arg(cluster, "--cluster={}"),
@@ -20,8 +44,7 @@ class AsyncManager:
                 Arg("info"),
                 Arg(manager, "--manager={}"),
             )
-        )
-        return output.to_dict()
+        ).to_dict()
 
     @staticmethod
     async def list(
@@ -29,8 +52,22 @@ class AsyncManager:
         cluster: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
-        output = await session.async_exec(
+    ) -> list[RacRecord]:
+        """Возвращает список менеджеров кластера.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
+        return await session.async_exec(
             Command(
                 Arg("manager"),
                 Arg(cluster, "--cluster={}"),
@@ -38,5 +75,4 @@ class AsyncManager:
                 Arg(cluster_pwd, "--cluster-pwd={}"),
                 Arg("list"),
             )
-        )
-        return output.to_list()
+        ).to_list()

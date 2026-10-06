@@ -1,0 +1,88 @@
+site_name: raclib
+site_description: Python-библиотека для работы с сервером администрирования 1С через утилиту RAC
+site_url: https://bqio.github.io/raclib/
+repo_url: https://github.com/bqio/raclib
+repo_name: bqio/raclib
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: ru
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Тёмная тема
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Светлая тема
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+plugins:
+  - search:
+      lang: ru
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            docstring_section_style: table
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            merge_init_into_class: true
+            filters: ["!^_"]
+
+nav:
+  - Главная: index.md
+  - Руководства:
+      - Установка и подключение: guides/install.md
+      - Кластеры: guides/clusters.md
+      - Информационные базы: guides/infobases.md
+      - Сеансы, соединения и блокировки: guides/sessions.md
+      - Обработка ошибок: guides/errors.md
+      - Асинхронный режим: guides/async.md
+      - Рецепты: guides/recipes.md
+  - Справочник API:
+      - Обзор: reference/index.md
+      - Кластеры и серверы: reference/cluster.md
+      - Информационные базы: reference/infobase.md
+      - Сеансы и процессы: reference/runtime.md
+      - Ограничения и счётчики: reference/resources.md
+      - Профили безопасности: reference/security.md
+      - Утилиты: reference/utils.md
+  - Разработка: contributing.md
+
+strict: true

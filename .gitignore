@@ -1,2 +1,13 @@
-__pycache__
+__pycache__/
+*.py[cod]
 main.py
+.tmp-raclib-*/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Сборка документации: артефакт публикуется на GitHub Pages из CI,
+# в репозитории ему места нет.
+site/

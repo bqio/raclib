@@ -1,15 +1,39 @@
-from .command import Command, Arg
+"""Агент кластера и его администраторы.
+
+Соответствует разделу ``rac agent``."""
+
+from __future__ import annotations
+
+from .._shared import RacRecord
 from ..session import Session
+from .command import Arg, Command
 
 
 class Agent:
+    """Агент кластера и его администраторы.
+    """
     class Admin:
+        """Администраторы агента кластера.
+        """
         @staticmethod
         def list(
             session: Session,
             agent_user: str | None = None,
             agent_pwd: str | None = None,
-        ):
+        ) -> list[RacRecord]:
+            """Возвращает список администраторов агента кластера.
+
+            Args:
+                agent_user: Имя администратора агента кластера.
+                agent_pwd: Пароль администратора агента кластера.
+
+            Returns:
+                list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+            :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+            :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+            :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+            """
             return session.exec(
                 Command(
                     Arg("agent"),
@@ -30,7 +54,27 @@ class Agent:
             os_user: str | None = None,
             agent_user: str | None = None,
             agent_pwd: str | None = None,
-        ):
+        ) -> None:
+            """Регистрирует администратора агента кластера.
+
+            После регистрации администратор сможет подключаться к агенту и управлять его рабочими процессами.
+
+            Args:
+                name: Имя администратора.
+                pwd: Пароль администратора.
+                auth: Способ аутентификации: ``pwd`` (пароль) или ``os`` (пользователь ОС).
+                descr: Произвольное описание.
+                os_user: Имя пользователя операционной системы при ``auth="os"``.
+                agent_user: Имя администратора агента кластера.
+                agent_pwd: Пароль администратора агента кластера.
+
+            Returns:
+                None
+
+            :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+            :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+            :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+            """
             return session.call(
                 Command(
                     Arg("agent"),
@@ -52,7 +96,21 @@ class Agent:
             name: str,
             agent_user: str | None = None,
             agent_pwd: str | None = None,
-        ):
+        ) -> None:
+            """Удаляет администратора агента кластера.
+
+            Args:
+                name: Имя администратора.
+                agent_user: Имя администратора агента кластера.
+                agent_pwd: Пароль администратора агента кластера.
+
+            Returns:
+                None
+
+            :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+            :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+            :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+            """
             return session.call(
                 Command(
                     Arg("agent"),
@@ -65,5 +123,14 @@ class Agent:
             )
 
     @staticmethod
-    def version(session: Session):
+    def version(session: Session) -> str:
+        """Возвращает версию агента кластера вместе с версией RAC.
+
+        Returns:
+            str: вывод RAC без завершающих пробельных символов.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(Command(Arg("agent"), Arg("version"))).to_str()

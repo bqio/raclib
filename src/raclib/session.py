@@ -1,97 +1,116 @@
-from typing import TypeVar, Type
-from subprocess import run
+"""Синхронная ветка: клиент, сессия и разбор вывода RAC.
 
-from .client import Client
-from .cmd.command import Command
+Разбор и обработка ошибок вынесены в :mod:`raclib._shared`, чтобы асинхронная
+ветка использовала ровно ту же логику.
+"""
+
+from __future__ import annotations
+
+import subprocess
+import sys
+
 from . import errors
-from .utils import get_array_chunks, dict_entry_count
+from ._shared import (
+    Client,
+    CommandResult,
+    RACInvocationError,
+    RACNotFoundError,
+    RACTimeoutError,
+    RawOutput,
+    resolve_encoding,
+    validate_rac_path,
+)
+from ._transport import run_rac
+from .cmd.command import Command
 
-import re
-
-T = TypeVar("T")
-LIST_DICT_REGEX = r"(.*?)\s+:\s?(.*)"
-
-
-class RawOutput:
-    def __init__(self, output: str) -> None:
-        self.output = output
-
-    def to_str(self) -> str:
-        return self.output.strip()
-
-    def to_dict(self) -> dict[str, str | int]:
-        matches: list[tuple[str, str]] = re.findall(LIST_DICT_REGEX, self.output)
-        _dict: dict[str, str | int] = {}
-        for prop in matches:
-            if prop[1].isdecimal():
-                _dict[prop[0].replace("-", "_")] = int(prop[1])
-            else:
-                _dict[prop[0].replace("-", "_")] = prop[1].replace('"', "")
-        # for key in _dict:
-        #     _dict[key] = any2b(_dict[key])
-        return _dict
-
-    def to_dataclass(self, dc: Type[T]) -> T:
-        return dc(**self.to_dict())
-
-    def to_list_of_dataclass(self, dc: Type[T]) -> list[T]:
-        return [dc(**entry) for entry in self.to_list()]
-
-    def to_list(self) -> list[dict[str, str | int]]:
-        entry_count = dict_entry_count(self.output.split("\n"))
-        matches: list[tuple[str, str]] = re.findall(LIST_DICT_REGEX, self.output)
-        if matches == []:
-            return []
-        chunks = get_array_chunks(matches, entry_count)
-        _list: list[dict[str, str | int]] = []
-        for chunk in chunks:
-            _dict: dict[str, str | int] = {}
-            for prop in chunk:
-                if prop[1].isdecimal():
-                    _dict[prop[0].replace("-", "_")] = int(prop[1])
-                else:
-                    _dict[prop[0].replace("-", "_")] = prop[1].replace('"', "")
-            # for key in _dict:
-            #     _dict[key] = any2b(_dict[key])
-            _list.append(_dict)
-        return _list
+__all__ = ["Client", "RawOutput", "Session", "RACNotFoundError", "RACTimeoutError"]
 
 
 class Session:
+    """Сессия администрирования: одна пара ``host:port`` сервера 1С.
+
+    :param host: хост сервера администрирования.
+    :param port: порт сервера администрирования (по умолчанию 1545).
+    :param timeout: предел ожидания ответа RAC в секундах. ``None`` — без
+        ограничения. Настоятельно рекомендуется задавать: без таймаута
+        недоступный кластер подвесит вызывающий поток навсегда.
+    :param encoding: кодировка вывода RAC. По умолчанию подбирается по
+        платформе (``cp866`` на Windows, ``utf-8`` в остальных случаях).
+    :param new_window: не показывать окно консоли при запуске RAC на Windows.
+    :param debug: печатать argv и вывод RAC.
+    """
+
     def __init__(
         self,
         client: Client,
         host: str = "localhost",
         port: int = 1545,
+        timeout: float | None = None,
+        encoding: str | None = None,
+        new_window: bool = False,
         debug: bool = False,
     ):
         self.client = client
         self.host = host
         self.port = port
-        self._debug = debug
+        self.timeout = timeout
+        self.encoding = resolve_encoding(encoding)
+        self.new_window = new_window
+        self.debug = debug
 
-    def exec(self, command: Command) -> RawOutput:
-        args: list[str] = [
-            str(self.client.rac_path),
-            f"{self.host}:{self.port}",
-        ] + command.args
-        if self._debug:
+    def exec(self, command: Command | str) -> RawOutput:
+        """Выполняет команду RAC и возвращает её вывод.
+
+        :raises RACNotFoundError: файл ``rac`` не найден или не исполняем.
+        :raises RACTimeoutError: RAC не ответил за ``self.timeout`` секунд.
+        :raises raclib.errors.UnknownError: RAC вернул незнакомую ошибку.
+        """
+        return RawOutput(self._execute(command).stdout)
+
+    def call(self, command: Command | str) -> None:
+        """Выполняет команду, отбрасывая вывод."""
+        self._execute(command)
+
+    def _execute(self, command: Command | str) -> CommandResult:
+        validate_rac_path(self.client.rac_path)
+        args = [f"{self.host}:{self.port}", *_command_args(command)]
+        if self.debug:
             print("[DEBUG]", args)
         try:
-            process = run(
+            result = run_rac(
+                self.client.rac_path,
                 args,
-                capture_output=True,
-                text=True,
-                encoding="cp866",
+                timeout=self.timeout,
+                encoding=self.encoding,
+                creationflags=_creation_flags(self.new_window),
             )
-            if process.returncode != 0:
-                raise errors.handler(process.stderr)
-            else:
-                if self._debug:
-                    print(process.stdout)
-                return RawOutput(process.stdout)
-        except FileNotFoundError:
-            raise errors.RACNotFoundError
+        except subprocess.TimeoutExpired:
+            raise RACTimeoutError(self.timeout or 0) from None
+        except FileNotFoundError as exc:
+            raise RACInvocationError(
+                f"Не удалось запустить RAC по пути {self.client.rac_path}: {exc}"
+            ) from exc
+        except OSError as exc:
+            raise RACInvocationError(
+                f"Не удалось запустить RAC по пути {self.client.rac_path}: {exc}"
+            ) from exc
+        if result.returncode != 0:
+            if self.debug:
+                print("[DEBUG]", result.stderr)
+            raise errors.handler(result.stderr) from None
+        if self.debug:
+            print(result.stdout)
+        return result
 
-    def call(self, command: Command) -> None:
-        self.exec(command)
+
+def _command_args(command: Command | str) -> list[str]:
+    if isinstance(command, Command):
+        return command.args
+    return [str(command)]
+
+
+def _creation_flags(new_window: bool) -> int:
+    """Флаги создания процесса, скрывающие окно консоли на Windows."""
+    if sys.platform != "win32":
+        return 0
+    return 0 if new_window else subprocess.CREATE_NO_WINDOW

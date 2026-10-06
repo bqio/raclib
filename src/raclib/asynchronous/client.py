@@ -1,6 +1,9 @@
-from pathlib import Path
+"""Асинхронный двойник :class:`raclib.client.Client`.
 
+Класс общий для обеих веток и объявлен в :mod:`raclib._shared`; здесь
+оставлен реэкспорт под именем ``AsyncClient`` для единообразия API.
+"""
 
-class AsyncClient:
-    def __init__(self, rac_path: Path | str):
-        self.rac_path = rac_path
+from .._shared import Client as AsyncClient
+
+__all__ = ["AsyncClient"]

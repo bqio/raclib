@@ -1,16 +1,39 @@
-from .command import Command, Arg
+"""Счётчики производительности кластера.
+
+Соответствует разделу ``rac counter``."""
+
+from __future__ import annotations
+
+from .._shared import RacRecord
 from ..session import Session
 from ..utils import b2ana
+from .command import Arg, Command
 
 
 class Counter:
+    """Счётчики производительности кластера.
+    """
     @staticmethod
     def list(
         session: Session,
         cluster: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> list[RacRecord]:
+        """Возвращает список счётчиков производительности кластера.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("counter"),
@@ -28,7 +51,22 @@ class Counter:
         counter: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> RacRecord:
+        """Возвращает описание счётчика производительности.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            counter: Имя счётчика.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            dict[str, str | int]: одна запись RAC. Ключи соответствуют полям вывода, дефисы заменены на подчёркивания, числовые значения приведены к ``int``.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("counter"),
@@ -63,7 +101,40 @@ class Counter:
         descr: str | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Создаёт или изменяет счётчик производительности.
+
+        Метод работает как upsert: если счётчика с таким именем нет, он создаётся. Логические параметры включают и выключают сбор соответствующей метрики: ``True`` — ``analyze``, ``False`` — ``not-analyze``, ``None`` — не менять.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            name: Имя счётчика.
+            collection_time: Момент сбора значений в формате RAC.
+            group: Группа счётчика: ``process``, ``session``, ``connection``, ``call`` или ``dbms``.
+            filter_type: Способ фильтрации объектов: ``processor``, ``session``, ``connection`` и другие.
+            filter: Значение фильтра для ``filter_type``.
+            duration: Собирать общее время выполнения вызовов.
+            cpu_time: Собирать время процессора.
+            memory: Собирать объём занятой памяти.
+            read: Собирать объём чтения.
+            write: Собирать объём записи.
+            duration_dbms: Собирать время выполнения запросов к СУБД.
+            dbms_bytes: Собирать объём данных, переданных в СУБД.
+            service: Собирать служебные метрики.
+            call: Собирать метрики вызовов сервера.
+            number_of_active_sessions: Собирать число активных сеансов.
+            number_of_sessions: Собирать общее число сеансов.
+            descr: Произвольное описание счётчика.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("counter"),
@@ -99,7 +170,23 @@ class Counter:
         object: str | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> list[RacRecord]:
+        """Возвращает текущие значения счётчика.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            counter: Имя счётчика.
+            object: Идентификатор объекта, для которого нужно значение.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("counter"),
@@ -119,7 +206,22 @@ class Counter:
         name: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Удаляет счётчик производительности.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            name: Имя счётчика.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("counter"),
@@ -139,7 +241,23 @@ class Counter:
         object: str | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Сбрасывает накопленные значения счётчика.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            counter: Имя счётчика.
+            object: Идентификатор объекта, значения которого нужно сбросить.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("counter"),
@@ -160,7 +278,23 @@ class Counter:
         object: str | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> list[RacRecord]:
+        """Возвращает накопленные значения счётчика за всё время наблюдения.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            counter: Имя счётчика.
+            object: Идентификатор объекта, для которого нужно значение.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("counter"),

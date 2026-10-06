@@ -1,99 +1,114 @@
-from typing import TypeVar, Type
+"""Асинхронная ветка: сессия администрирования на базе ``asyncio``.
 
-from .client import AsyncClient
-from ..cmd.command import Command
-from .. import errors
-from ..utils import get_array_chunks, dict_entry_count
+Файл сгенерирован из ``src/raclib/session.py`` скриптом
+``tools/generate_async.py``. Правки вносите в синхронную ветку.
+"""
+
+from __future__ import annotations
 
 import asyncio
-import re
 
-T = TypeVar("T")
-LIST_DICT_REGEX = r"(.*?)\s+:\s?(.*)\r"
+from .. import errors
+from .._shared import (
+    Client,
+    CommandResult,
+    RACInvocationError,
+    RawOutput,
+    resolve_encoding,
+    validate_rac_path,
+)
+from ..cmd.command import Command
+from ._transport import run_rac_async
 
-
-class RawOutput:
-    def __init__(self, output: str) -> None:
-        self.output = output
-
-    def to_str(self) -> str:
-        return self.output.strip()
-
-    def to_dict(self) -> dict[str, str | int]:
-        matches: list[tuple[str, str]] = re.findall(LIST_DICT_REGEX, self.output)
-        _dict: dict[str, str | int] = {}
-        for prop in matches:
-            if prop[1].isdecimal():
-                _dict[prop[0].replace("-", "_")] = int(prop[1])
-            else:
-                _dict[prop[0].replace("-", "_")] = prop[1].replace('"', "")
-        # for key in _dict:
-        #     _dict[key] = any2b(_dict[key])
-        return _dict
-
-    def to_dataclass(self, dc: Type[T]) -> T:
-        return dc(**self.to_dict())
-
-    def to_list_of_dataclass(self, dc: Type[T]) -> list[T]:
-        return [dc(**entry) for entry in self.to_list()]
-
-    def to_list(self) -> list[dict[str, str | int]]:
-        entry_count = dict_entry_count(self.output.splitlines())
-        matches: list[tuple[str, str]] = re.findall(LIST_DICT_REGEX, self.output)
-        if matches == []:
-            return []
-        chunks = get_array_chunks(matches, entry_count)
-        _list: list[dict[str, str | int]] = []
-        for chunk in chunks:
-            _dict: dict[str, str | int] = {}
-            for prop in chunk:
-                if prop[1].isdecimal():
-                    _dict[prop[0].replace("-", "_")] = int(prop[1])
-                else:
-                    _dict[prop[0].replace("-", "_")] = prop[1].replace('"', "")
-            # for key in _dict:
-            #     _dict[key] = any2b(_dict[key])
-            _list.append(_dict)
-        return _list
+__all__ = ["AsyncSession"]
 
 
 class AsyncSession:
+    """Асинхронная сессия администрирования.
+
+    :param max_concurrency: предел одновременных запусков ``rac`` в рамках
+        одной сессии. ``None`` — без ограничения. Без него ``asyncio.gather``
+        по сотням кластеров порождает столько же процессов ``rac``.
+    Остальные параметры совпадают с :class:`raclib.session.Session`.
+    """
+
     def __init__(
         self,
-        async_client: AsyncClient,
+        client: Client,
         host: str = "localhost",
         port: int = 1545,
+        timeout: float | None = None,
+        encoding: str | None = None,
+        max_concurrency: int | None = None,
         debug: bool = False,
-    ) -> None:
-        self.client = async_client
+    ):
+        """Создаёт сессию; параметры совпадают с синхронной веткой."""
+        self.client = client
         self.host = host
         self.port = port
-        self._debug = debug
+        self.timeout = timeout
+        self.encoding = resolve_encoding(encoding)
+        self.max_concurrency = max_concurrency
+        self.debug = debug
+        self._semaphore: asyncio.Semaphore | None = (
+            asyncio.Semaphore(max_concurrency) if max_concurrency else None
+        )
 
-    async def async_exec(self, command: Command):
-        args: list[str] = [
-            f"{self.host}:{self.port}",
-        ] + command.args
-        if self._debug:
+    async def async_exec(self, command: Command | str) -> RawOutput:
+        """Выполняет команду RAC и возвращает её вывод."""
+        return RawOutput((await self._execute(command)).stdout)
+
+    async def async_call(self, command: Command | str) -> None:
+        """Выполняет команду, отбрасывая вывод."""
+        await self._execute(command)
+
+    #: Псевдонимы, чтобы набор методов совпадал с
+    #: :class:`raclib.session.Session` (там они называются ``exec``/``call``).
+    exec = async_exec
+    call = async_call
+
+    async def _execute(self, command: Command | str) -> CommandResult:
+        validate_rac_path(self.client.rac_path)
+        args = [f"{self.host}:{self.port}", *_command_args(command)]
+        if self.debug:
             print("[DEBUG]", args)
         try:
-            process = await asyncio.create_subprocess_exec(
-                self.client.rac_path,
-                *args,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, stderr = await process.communicate()
-            if process.returncode != 0:
-                stderr = stderr.decode(encoding="cp866")
-                raise errors.handler(stderr)
+            if self._semaphore is None:
+                result = await self._invoke(args)
             else:
-                stdout = stdout.decode(encoding="cp866")
-                if self._debug:
-                    print(stdout)
-                return RawOutput(stdout)
-        except FileNotFoundError:
-            raise errors.RACNotFoundError
+                async with self._semaphore:
+                    result = await self._invoke(args)
+        except TimeoutError:
+            # Важно: этот блок обязан идти раньше OSError. В Python 3.11+
+            # TimeoutError наследуется от OSError (asyncio.TimeoutError —
+            # его псевдоним), и иначе перехватился бы общий блок.
+            raise errors.RACTimeoutError(self.timeout or 0) from None
+        except FileNotFoundError as exc:
+            raise RACInvocationError(
+                f"Не удалось запустить RAC по пути {self.client.rac_path}: {exc}"
+            ) from exc
+        except OSError as exc:
+            raise RACInvocationError(
+                f"Не удалось запустить RAC по пути {self.client.rac_path}: {exc}"
+            ) from exc
+        if result.returncode != 0:
+            if self.debug:
+                print("[DEBUG]", result.stderr)
+            raise errors.handler(result.stderr) from None
+        if self.debug:
+            print(result.stdout)
+        return result
 
-    async def async_call(self, command: Command):
-        await self.async_exec(command)
+    async def _invoke(self, args: list[str]) -> CommandResult:
+        return await run_rac_async(
+            self.client.rac_path,
+            args,
+            timeout=self.timeout,
+            encoding=self.encoding,
+        )
+
+
+def _command_args(command: Command | str) -> list[str]:
+    if isinstance(command, Command):
+        return command.args
+    return [str(command)]

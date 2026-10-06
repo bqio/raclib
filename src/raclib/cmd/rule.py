@@ -1,8 +1,17 @@
-from .command import Command, Arg, Flag
+"""Требования размещения информационных баз по рабочим серверам.
+
+Соответствует разделу ``rac rule``."""
+
+from __future__ import annotations
+
+from .._shared import RacRecord
 from ..session import Session
+from .command import Arg, Command, Flag
 
 
 class Rule:
+    """Требования размещения информационных баз по рабочим серверам.
+    """
     @staticmethod
     def apply(
         session: Session,
@@ -10,7 +19,22 @@ class Rule:
         partial: bool = False,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Применяет требования размещения к кластеру.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            partial: Применить частично, не дожидаясь полного перераспределения.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("rule"),
@@ -30,7 +54,23 @@ class Rule:
         rule: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> RacRecord:
+        """Возвращает требование размещения информационных баз.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            server: Идентификатор (UUID) рабочего сервера.
+            rule: Идентификатор требования размещения.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            dict[str, str | int]: одна запись RAC. Ключи соответствуют полям вывода, дефисы заменены на подчёркивания, числовые значения приведены к ``int``.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("rule"),
@@ -50,7 +90,22 @@ class Rule:
         server: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> list[RacRecord]:
+        """Возвращает список требований размещения рабочих серверов.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            server: Идентификатор (UUID) рабочего сервера.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("rule"),
@@ -75,7 +130,30 @@ class Rule:
         priority: int | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> str:
+        """Добавляет требование размещения и возвращает его идентификатор.
+
+        Требования задают, какие информационные базы могут выполняться на конкретном рабочем сервере.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            server: Идентификатор (UUID) рабочего сервера.
+            position: Позиция требования в списке.
+            object_type: Тип объекта требования: ``Infobase`` или ``Server``.
+            infobase_name: Имя информационной базы, к которой применяется требование.
+            rule_type: Вид требования: ``Assign`` или ``Deny``.
+            application_ext: Расширение приложения, к которому применяется требование.
+            priority: Приоритет требования.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            str: идентификатор созданного требования размещения.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         rule = session.exec(
             Command(
                 Arg("rule"),
@@ -108,7 +186,29 @@ class Rule:
         priority: int | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Изменяет требование размещения.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            server: Идентификатор (UUID) рабочего сервера.
+            rule: Идентификатор требования размещения.
+            position: Новая позиция требования в списке.
+            object_type: Тип объекта требования: ``Infobase`` или ``Server``.
+            infobase_name: Имя информационной базы.
+            rule_type: Вид требования: ``Assign`` или ``Deny``.
+            application_ext: Расширение приложения.
+            priority: Приоритет требования.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("rule"),
@@ -135,7 +235,23 @@ class Rule:
         rule: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Удаляет требование размещения.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            server: Идентификатор (UUID) рабочего сервера.
+            rule: Идентификатор требования размещения.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("rule"),

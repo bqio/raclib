@@ -1,17 +1,42 @@
-from .command import Command, Arg
+"""Кластеры 1С: создание, настройка, администраторы.
+
+Соответствует разделу ``rac cluster``."""
+
+from __future__ import annotations
+
+from .._shared import RacRecord
 from ..session import Session
 from ..utils import b2yn
+from .command import Arg, Command
 
 
 class Cluster:
+    """Кластеры 1С: создание, настройка, администраторы.
+    """
     class Admin:
+        """Администраторы кластера.
+        """
         @staticmethod
         def list(
             session: Session,
             cluster: str,
             cluster_user: str | None = None,
             cluster_pwd: str | None = None,
-        ):
+        ) -> list[RacRecord]:
+            """Возвращает список администраторов кластера.
+
+            Args:
+                cluster: Идентификатор (UUID) кластера.
+                cluster_user: Имя администратора кластера.
+                cluster_pwd: Пароль администратора кластера.
+
+            Returns:
+                list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+            :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+            :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+            :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+            """
             return session.exec(
                 Command(
                     Arg("cluster"),
@@ -34,7 +59,26 @@ class Cluster:
             os_user: str | None = None,
             cluster_user: str | None = None,
             cluster_pwd: str | None = None,
-        ):
+        ) -> None:
+            """Регистрирует администратора кластера.
+
+            Args:
+                cluster: Идентификатор (UUID) кластера.
+                name: Имя администратора.
+                pwd: Пароль администратора.
+                auth: Способ аутентификации: ``pwd`` (пароль) или ``os`` (пользователь ОС).
+                descr: Произвольное описание.
+                os_user: Имя пользователя операционной системы при ``auth="os"``.
+                cluster_user: Имя администратора кластера.
+                cluster_pwd: Пароль администратора кластера.
+
+            Returns:
+                None
+
+            :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+            :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+            :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+            """
             return session.call(
                 Command(
                     Arg("cluster"),
@@ -58,7 +102,24 @@ class Cluster:
             name: str,
             cluster_user: str | None = None,
             cluster_pwd: str | None = None,
-        ):
+        ) -> None:
+            """Удаляет администратора кластера.
+
+            RAC не позволит удалить последнего администратора с разрешённой аутентификацией по паролю — такой случай приводит к :class:`raclib.errors.AgentAdminCreateError`.
+
+            Args:
+                cluster: Идентификатор (UUID) кластера.
+                name: Имя администратора.
+                cluster_user: Имя администратора кластера.
+                cluster_pwd: Пароль администратора кластера.
+
+            Returns:
+                None
+
+            :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+            :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+            :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+            """
             return session.call(
                 Command(
                     Arg("cluster"),
@@ -72,7 +133,19 @@ class Cluster:
             )
 
     @staticmethod
-    def info(session: Session, cluster: str):
+    def info(session: Session, cluster: str) -> RacRecord:
+        """Возвращает параметры кластера.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+
+        Returns:
+            dict[str, str | int]: одна запись RAC. Ключи соответствуют полям вывода, дефисы заменены на подчёркивания, числовые значения приведены к ``int``.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("cluster"),
@@ -82,7 +155,16 @@ class Cluster:
         ).to_dict()
 
     @staticmethod
-    def list(session: Session):
+    def list(session: Session) -> list[RacRecord]:
+        """Возвращает список кластеров, зарегистрированных у агента.
+
+        Returns:
+            list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("cluster"),
@@ -111,7 +193,38 @@ class Cluster:
         ping_timeout: int = 0,
         agent_user: str | None = None,
         agent_pwd: str | None = None,
-    ):
+    ) -> str:
+        """Создаёт кластер и возвращает его идентификатор.
+
+        Для создания кластера нужны права администратора агента кластера, поэтому обычно передают ``agent_user`` и ``agent_pwd``.
+
+        Args:
+            host: Имя хоста, на котором работает агент кластера.
+            port: Порт агента кластера (по умолчанию 1540).
+            name: Отображаемое имя кластера.
+            expiration_timeout: Таймаут завершения сеансов, потерявших связь, в секундах.
+            lifetime_limit: Максимальное время жизни сеанса в секундах; 0 — без ограничения.
+            max_memory_size: Максимальный объём памяти рабочего процесса в КБ.
+            max_memory_time_limit: Интервал проверки превышения памяти рабочим процессом в секундах.
+            security_level: Уровень безопасности кластера: ``disabled``, ``basic`` или ``integrity``.
+            session_fault_tolerance_level: Уровень отказоустойчивости сеансов: 0, 1 или 2.
+            load_balancing_mode: Режим распределения нагрузки: ``performance`` или ``memory``.
+            errors_count_threshold: Число ошибок, после которого рабочий процесс считается проблемным.
+            kill_problem_processes: Завершать проблемные рабочие процессы автоматически.
+            kill_by_memory_with_dump: Завершать процессы при превышении памяти, снимая дамп.
+            allow_access_right_audit_events_recording: Разрешить запись событий аудита доступа к данным.
+            ping_period: Период проверки связи с рабочими процессами в секундах; 0 — автоматически.
+            ping_timeout: Таймаут проверки связи с рабочими процессами в секундах; 0 — автоматически.
+            agent_user: Имя администратора агента кластера.
+            agent_pwd: Пароль администратора агента кластера.
+
+        Returns:
+            str: идентификатор (UUID) созданного кластера.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         cluster = session.exec(
             Command(
                 Arg("cluster"),
@@ -163,7 +276,37 @@ class Cluster:
         ping_timeout: int | None = None,
         agent_user: str | None = None,
         agent_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Изменяет параметры кластера.
+
+        Меняются только явно переданные параметры: значение ``None`` означает «оставить как есть». Сбросить параметр в значение по умолчанию через этот метод нельзя.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            name: Новое отображаемое имя кластера.
+            expiration_timeout: Таймаут завершения сеансов, потерявших связь, в секундах.
+            lifetime_limit: Максимальное время жизни сеанса в секундах.
+            max_memory_size: Максимальный объём памяти рабочего процесса в КБ.
+            max_memory_time_limit: Интервал проверки превышения памяти в секундах.
+            security_level: Уровень безопасности: ``disabled``, ``basic`` или ``integrity``.
+            session_fault_tolerance_level: Уровень отказоустойчивости сеансов: 0, 1 или 2.
+            load_balancing_mode: Режим распределения нагрузки: ``performance`` или ``memory``.
+            errors_count_threshold: Порог числа ошибок рабочего процесса.
+            kill_problem_processes: Завершать проблемные рабочие процессы автоматически.
+            kill_by_memory_with_dump: Завершать процессы при превышении памяти, снимая дамп.
+            allow_access_right_audit_events_recording: Разрешить запись событий аудита доступа к данным.
+            ping_period: Период проверки связи с рабочими процессами в секундах.
+            ping_timeout: Таймаут проверки связи с рабочими процессами в секундах.
+            agent_user: Имя администратора агента кластера.
+            agent_pwd: Пароль администратора агента кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("cluster"),
@@ -199,7 +342,23 @@ class Cluster:
         cluster: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Удаляет кластер со всеми рабочими серверами и информационными базами.
+
+        Операция необратима: вместе с кластером удаляются его настройки, но не сами базы данных на сервере СУБД.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("cluster"),

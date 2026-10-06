@@ -1,9 +1,18 @@
-from .command import Command, Arg, Flag
+"""Информационные базы кластера.
+
+Соответствует разделам ``rac infobase`` и ``rac infobase summary``."""
+
+from __future__ import annotations
+
+from .._shared import RacRecord
 from ..session import Session
-from ..utils import b2of, b2da, b2yn
+from ..utils import b2da, b2of, b2yn
+from .command import Arg, Command, Flag
 
 
 class Infobase:
+    """Информационные базы кластера.
+    """
     @staticmethod
     def info(
         session: Session,
@@ -14,7 +23,27 @@ class Infobase:
         infobase_pwd: str | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> RacRecord:
+        """Возвращает параметры информационной базы.
+
+        Базу можно указать идентификатором или именем.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            infobase: Идентификатор (UUID) информационной базы.
+            name: Имя информационной базы в кластере.
+            infobase_user: Имя пользователя информационной базы.
+            infobase_pwd: Пароль пользователя информационной базы.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            dict[str, str | int]: одна запись RAC. Ключи соответствуют полям вывода, дефисы заменены на подчёркивания, числовые значения приведены к ``int``.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("infobase"),
@@ -30,6 +59,8 @@ class Infobase:
         ).to_dict()
 
     class Summary:
+        """Сводки по информационным базам кластера.
+        """
         @staticmethod
         def info(
             session: Session,
@@ -38,7 +69,25 @@ class Infobase:
             name: str | None = None,
             cluster_user: str | None = None,
             cluster_pwd: str | None = None,
-        ):
+        ) -> RacRecord:
+            """Возвращает сводку по информационной базе кластера.
+
+            Сводка содержит суммарные показатели по базе: число сеансов, соединений и занятые ресурсы.
+
+            Args:
+                cluster: Идентификатор (UUID) кластера.
+                infobase: Идентификатор (UUID) информационной базы.
+                name: Имя информационной базы в кластере.
+                cluster_user: Имя администратора кластера.
+                cluster_pwd: Пароль администратора кластера.
+
+            Returns:
+                dict[str, str | int]: одна запись RAC. Ключи соответствуют полям вывода, дефисы заменены на подчёркивания, числовые значения приведены к ``int``.
+
+            :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+            :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+            :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+            """
             return session.exec(
                 Command(
                     Arg("infobase"),
@@ -58,7 +107,21 @@ class Infobase:
             cluster: str,
             cluster_user: str | None = None,
             cluster_pwd: str | None = None,
-        ):
+        ) -> list[RacRecord]:
+            """Возвращает сводки по всем информационным базам кластера.
+
+            Args:
+                cluster: Идентификатор (UUID) кластера.
+                cluster_user: Имя администратора кластера.
+                cluster_pwd: Пароль администратора кластера.
+
+            Returns:
+                list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+            :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+            :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+            :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+            """
             return session.exec(
                 Command(
                     Arg("infobase"),
@@ -79,7 +142,24 @@ class Infobase:
             descr: str | None = None,
             cluster_user: str | None = None,
             cluster_pwd: str | None = None,
-        ):
+        ) -> None:
+            """Изменяет представление информационной базы в списке сводок.
+
+            Args:
+                cluster: Идентификатор (UUID) кластера.
+                infobase: Идентификатор (UUID) информационной базы.
+                name: Новое имя базы в сводке.
+                descr: Новое описание базы в сводке.
+                cluster_user: Имя администратора кластера.
+                cluster_pwd: Пароль администратора кластера.
+
+            Returns:
+                None
+
+            :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+            :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+            :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+            """
             return session.call(
                 Command(
                     Arg("infobase"),
@@ -113,7 +193,36 @@ class Infobase:
         create_database: bool = False,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> str:
+        """Создаёт информационную базу в кластере и возвращает её идентификатор.
+
+        По умолчанию база только регистрируется в кластере: база данных на сервере СУБД должна уже существовать. Чтобы RAC создал её сам, передайте ``create_database=True``.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            name: Имя информационной базы в кластере.
+            dbms: Тип СУБД: ``PostgreSQL``, ``MSSQLServer``, ``IBMDB2``, ``Oracle`` или ``File``.
+            db_server: Сервер баз данных вида ``host`` или ``host:port``.
+            db_name: Имя базы данных на сервере СУБД.
+            locale: Код локали, например ``ru_RU``.
+            db_user: Имя пользователя сервера баз данных.
+            db_pwd: Пароль пользователя сервера баз данных.
+            descr: Произвольное описание.
+            date_offset: Смещение даты в часах относительно времени сервера.
+            security_level: Уровень безопасности базы: ``disabled``, ``basic`` или ``integrity``.
+            scheduled_jobs_deny: Запретить выполнение регламентных заданий.
+            license_distribution: Разрешить распределение лицензий.
+            create_database: Создать базу данных на сервере СУБД, а не только зарегистрировать её.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            str: идентификатор (UUID) созданной информационной базы.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         infobase = session.exec(
             Command(
                 Arg("infobase"),
@@ -173,7 +282,50 @@ class Infobase:
         maximum_scheduled_jobs_start_shift_without_active_users: int | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Изменяет параметры информационной базы.
+
+        Меняются только явно переданные параметры: ``None`` означает «оставить как есть».
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            infobase: Идентификатор (UUID) информационной базы.
+            name: Новое имя базы в кластере.
+            infobase_user: Имя пользователя информационной базы.
+            infobase_pwd: Пароль пользователя информационной базы.
+            dbms: Тип СУБД.
+            db_server: Сервер баз данных вида ``host`` или ``host:port``.
+            db_name: Имя базы данных на сервере СУБД.
+            db_user: Имя пользователя сервера баз данных.
+            db_pwd: Пароль пользователя сервера баз данных.
+            descr: Произвольное описание.
+            denied_from: Начало блокировки подключений.
+            denied_message: Сообщение, которое увидят пользователи при блокировке.
+            denied_parameter: Параметр блокировки подключений.
+            denied_to: Окончание блокировки подключений.
+            permission_code: Код доступа к информационной базе.
+            sessions_deny: Запретить создание новых сеансов.
+            scheduled_jobs_deny: Запретить выполнение регламентных заданий.
+            license_distribution: Разрешить распределение лицензий.
+            external_session_manager_connection_string: Строка соединения с внешним менеджером сеансов.
+            external_session_manager_required: Требовать внешний менеджер сеансов.
+            reserve_working_processes: Зарезервировать рабочие процессы.
+            security_profile_name: Имя профиля безопасности.
+            safe_mode_security_profile_name: Имя профиля безопасности для безопасного режима.
+            disable_local_speech_to_text: Отключить локальное распознавание речи.
+            configuration_unload_delay_by_working_process_without_active_users: Задержка выгрузки конфигурации рабочим процессом без активных пользователей.
+            minimum_scheduled_jobs_start_period_without_active_users: Минимальный период запуска регламентных заданий без активных пользователей.
+            maximum_scheduled_jobs_start_shift_without_active_users: Максимальное смещение запуска регламентных заданий без активных пользователей.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("infobase"),
@@ -240,11 +392,37 @@ class Infobase:
         name: str | None = None,
         infobase_user: str | None = None,
         infobase_pwd: str | None = None,
+        db_user: str | None = None,
+        db_pwd: str | None = None,
         drop_database: bool = False,
         clear_database: bool = False,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Удаляет информационную базу из кластера.
+
+        По умолчанию удаляется только запись о базе в кластере. Чтобы удалить или очистить саму базу данных на сервере СУБД, передайте ``drop_database=True`` или ``clear_database=True``; для этого нужны ``db_user`` и ``db_pwd``.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            infobase: Идентификатор (UUID) информационной базы.
+            name: Имя информационной базы в кластере.
+            infobase_user: Имя пользователя информационной базы.
+            infobase_pwd: Пароль пользователя информационной базы.
+            db_user: Имя пользователя сервера баз данных; нужен при удалении базы данных.
+            db_pwd: Пароль пользователя сервера баз данных.
+            drop_database: Удалить базу данных на сервере СУБД.
+            clear_database: Очистить базу данных на сервере СУБД, оставив её саму.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("infobase"),
@@ -256,6 +434,8 @@ class Infobase:
                 Arg(name, "--name={}"),
                 Arg(infobase_user, "--infobase-user={}"),
                 Arg(infobase_pwd, "--infobase-pwd={}"),
+                Arg(db_user, "--db-user={}"),
+                Arg(db_pwd, "--db-pwd={}"),
                 Flag(drop_database, "--drop-database"),
                 Flag(clear_database, "--clear-database"),
             )

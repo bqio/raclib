@@ -1,6 +1,9 @@
-from pathlib import Path
+"""Путь к исполняемому файлу ``rac``.
 
+Класс общий для синхронной и асинхронной веток и объявлен в
+:mod:`raclib._shared`; здесь оставлен реэкспорт под историческим именем.
+"""
 
-class Client:
-    def __init__(self, rac_path: Path | str):
-        self.rac_path = rac_path
+from ._shared import Client
+
+__all__ = ["Client"]

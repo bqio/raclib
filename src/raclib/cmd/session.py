@@ -1,8 +1,17 @@
-from .command import Command, Arg, Flag
+"""Сеансы пользователей.
+
+Соответствует разделу ``rac session``."""
+
+from __future__ import annotations
+
+from .._shared import RacRecord
 from ..session import Session
+from .command import Arg, Command, Flag
 
 
 class UserSession:
+    """Сеансы пользователей.
+    """
     @staticmethod
     def info(
         session: Session,
@@ -11,7 +20,23 @@ class UserSession:
         licenses: bool = False,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> RacRecord:
+        """Возвращает сведения о сеансе пользователя.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            user_session: Номер сеанса.
+            licenses: Показать информацию о занятых лицензиях.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            dict[str, str | int]: одна запись RAC. Ключи соответствуют полям вывода, дефисы заменены на подчёркивания, числовые значения приведены к ``int``.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("session"),
@@ -32,7 +57,25 @@ class UserSession:
         licenses: bool = False,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> list[RacRecord]:
+        """Возвращает список сеансов пользователей кластера.
+
+        Список можно сузить до одной информационной базы.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            infobase: Идентификатор (UUID) информационной базы.
+            licenses: Показать информацию о занятых лицензиях.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("session"),
@@ -53,7 +96,25 @@ class UserSession:
         error_message: str | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Завершает сеанс пользователя.
+
+        Пользователь получит сообщение, переданное в ``error_message``.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            user_session: Номер сеанса.
+            error_message: Сообщение, которое увидит пользователь.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("session"),
@@ -74,7 +135,25 @@ class UserSession:
         error_message: str | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Прерывает текущий серверный вызов в сеансе пользователя.
+
+        В отличие от :meth:`terminate` сам сеанс не завершается.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            user_session: Номер сеанса.
+            error_message: Сообщение, которое увидит пользователь.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("session"),

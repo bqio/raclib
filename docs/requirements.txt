@@ -1,0 +1,4 @@
+# Зависимости для сборки документации.
+# Устанавливаются как: pip install -e ".[docs]"
+mkdocs-material>=9.5
+mkdocstrings[python]>=0.26

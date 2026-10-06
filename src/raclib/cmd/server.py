@@ -1,9 +1,18 @@
-from .command import Command, Arg
+"""Рабочие серверы кластера.
+
+Соответствует разделу ``rac server``."""
+
+from __future__ import annotations
+
+from .._shared import RacRecord
 from ..session import Session
 from ..utils import b2yn
+from .command import Arg, Command
 
 
 class Server:
+    """Рабочие серверы кластера.
+    """
     @staticmethod
     def info(
         session: Session,
@@ -11,7 +20,22 @@ class Server:
         server: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> RacRecord:
+        """Возвращает параметры рабочего сервера.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            server: Идентификатор (UUID) рабочего сервера.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            dict[str, str | int]: одна запись RAC. Ключи соответствуют полям вывода, дефисы заменены на подчёркивания, числовые значения приведены к ``int``.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("server"),
@@ -29,7 +53,21 @@ class Server:
         cluster: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> list[RacRecord]:
+        """Возвращает список рабочих серверов кластера.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            list[dict[str, str | int]]: записи RAC. Пустой список, если RAC ничего не вернул.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.exec(
             Command(
                 Arg("server"),
@@ -64,7 +102,41 @@ class Server:
         add_prohibiting_assignment_rule: bool | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> str:
+        """Регистрирует рабочий сервер в кластере и возвращает его идентификатор.
+
+        Сервер должен быть доступен по сети: RAC обращается к его агенту.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            agent_host: Имя хоста, на котором работает агент сервера.
+            agent_port: Порт агента сервера.
+            port_range: Диапазон IP-портов рабочих процессов, например ``1560:1591``.
+            name: Отображаемое имя рабочего сервера.
+            using: Назначение сервера: ``main``, ``normal`` или ``job``.
+            infobases_limit: Максимальное число информационных баз на сервере.
+            memory_limit: Максимальный объём памяти рабочих процессов в КБ.
+            connections_limit: Максимальное число соединений на процесс.
+            cluster_port: Порт, на котором сервер слушает кластер.
+            dedicate_managers: Выделять менеджеры: ``all``, ``none`` или ``isolated``.
+            safe_working_processess_memory_limit: Порог памяти рабочего процесса для безопасного режима.
+            safe_call_memory_limit: Порог памяти вызова для безопасного режима.
+            critical_total_memory: Критический общий объём памяти.
+            temporary_allowed_total_memory: Временно разрешённый общий объём памяти.
+            temporary_allowed_total_memory_time_limit: Время действия временного лимита памяти в секундах.
+            service_principal_name: Имя субъекта-службы (SPN) для аутентификации.
+            restart_schedule: Расписание перезапуска сервера.
+            add_prohibiting_assignment_rule: Добавить запрещающее требование размещения.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            str: идентификатор (UUID) зарегистрированного рабочего сервера.
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         server = session.exec(
             Command(
                 Arg("server"),
@@ -129,7 +201,37 @@ class Server:
         restart_schedule: str | None = None,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Изменяет параметры рабочего сервера.
+
+        Меняются только явно переданные параметры: ``None`` означает «оставить как есть».
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            server: Идентификатор (UUID) рабочего сервера.
+            port_range: Диапазон IP-портов рабочих процессов.
+            using: Назначение сервера: ``main``, ``normal`` или ``job``.
+            infobases_limit: Максимальное число информационных баз.
+            memory_limit: Максимальный объём памяти рабочих процессов в КБ.
+            connections_limit: Максимальное число соединений на процесс.
+            dedicate_managers: Выделять менеджеры: ``all``, ``none`` или ``isolated``.
+            safe_working_processess_memory_limit: Порог памяти рабочего процесса для безопасного режима.
+            safe_call_memory_limit: Порог памяти вызова для безопасного режима.
+            critical_total_memory: Критический общий объём памяти.
+            temporary_allowed_total_memory: Временно разрешённый общий объём памяти.
+            temporary_allowed_total_memory_time_limit: Время действия временного лимита памяти в секундах.
+            service_principal_name: Имя субъекта-службы (SPN) для аутентификации.
+            restart_schedule: Расписание перезапуска сервера.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("server"),
@@ -170,7 +272,24 @@ class Server:
         server: str,
         cluster_user: str | None = None,
         cluster_pwd: str | None = None,
-    ):
+    ) -> None:
+        """Удаляет рабочий сервер из кластера.
+
+        Центральный сервер кластера удалить нельзя: попытка приводит к :class:`raclib.errors.ServerIsMainError`.
+
+        Args:
+            cluster: Идентификатор (UUID) кластера.
+            server: Идентификатор (UUID) рабочего сервера.
+            cluster_user: Имя администратора кластера.
+            cluster_pwd: Пароль администратора кластера.
+
+        Returns:
+            None
+
+        :raises raclib.errors.RACNotFoundError: файл ``rac`` не найден или не может быть запущен.
+        :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
+        :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
+        """
         return session.call(
             Command(
                 Arg("server"),
