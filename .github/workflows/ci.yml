@@ -48,15 +48,10 @@ jobs:
           python -m build
 
       - name: Check wheel contents and import
-        # Проверяем именно артефакт, который получит пользователь. Колесо
-        # распаковывается и импортируется через PYTHONPATH — так проверка не
-        # зависит от того, куда pip ставит пакет и какие каталоги уже заняты
-        # (на Windows раннере установка поверх окружения вела себя иначе).
-        shell: bash
-        run: |
-          python -m zipfile -e dist/*.whl wheel-check
-          PYTHONPATH=wheel-check python -c "import raclib, raclib.asynchronous; print('wheel ok:', raclib.Session, raclib.Client is raclib.asynchronous.AsyncClient)"
-          PYTHONPATH=wheel-check python -c "from pathlib import Path; import raclib; assert (Path(raclib.__file__).parent / 'py.typed').exists(), 'py.typed отсутствует в колесе'; print('py.typed на месте')"
+        # Проверяем именно артефакт, который получит пользователь. Логика в
+        # Python-скрипте: вызовы python -m zipfile с POSIX-путями и подстановка
+        # dist/*.whl в bash на Windows-раннере вели себя иначе, чем на Ubuntu.
+        run: python tools/check_wheel.py
 
   tests-without-pytest:
     # Тесты не должны требовать внешних зависимостей: они написаны на unittest.
