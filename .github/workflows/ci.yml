@@ -26,7 +26,9 @@ jobs:
         run: python -m pip install --upgrade pip pytest ruff
 
       - name: Lint (ruff)
-        run: ruff check src tests tools
+        # Через `python -m`, чтобы не зависеть от того, попал ли каталог
+        # скриптов окружения в PATH (на Windows это отдельная тонкость).
+        run: python -m ruff check src tests tools
 
       - name: Check async tree is generated
         run: python tools/generate_async.py --check
@@ -45,12 +47,16 @@ jobs:
           python -m pip install build
           python -m build
 
-      - name: Install wheel and smoke test
-        # Проверяем именно то, что получит пользователь: собираем колесо,
-        # ставим его и импортируем пакет уже из окружения, а не из src/.
+      - name: Check wheel contents and import
+        # Проверяем именно артефакт, который получит пользователь. Колесо
+        # распаковывается и импортируется через PYTHONPATH — так проверка не
+        # зависит от того, куда pip ставит пакет и какие каталоги уже заняты
+        # (на Windows раннере установка поверх окружения вела себя иначе).
+        shell: bash
         run: |
-          python -m pip install --force-reinstall dist/*.whl
-          python -c "import raclib, raclib.asynchronous; print('installed', raclib.Session)"
+          python -m zipfile -e dist/*.whl wheel-check
+          PYTHONPATH=wheel-check python -c "import raclib, raclib.asynchronous; print('wheel ok:', raclib.Session, raclib.Client is raclib.asynchronous.AsyncClient)"
+          PYTHONPATH=wheel-check python -c "from pathlib import Path; import raclib; assert (Path(raclib.__file__).parent / 'py.typed').exists(), 'py.typed отсутствует в колесе'; print('py.typed на месте')"
 
   tests-without-pytest:
     # Тесты не должны требовать внешних зависимостей: они написаны на unittest.
