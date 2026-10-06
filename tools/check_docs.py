@@ -40,6 +40,88 @@ LINK_RE = re.compile(r"\]\(([^)#\s]+\.md)(?:#[^)\s]*)?\)")
 #: Ссылка на страницу в nav: ``- Название: путь.md``.
 NAV_RE = re.compile(r":\s*([\w./-]+\.md)\s*$", re.MULTILINE)
 
+#: Ссылка с якорем: ``[текст](путь#anchor)`` или ``[текст](#anchor)``.
+ANCHOR_RE = re.compile(r"\]\(([^)\s]*?)#([^)\s]+)\)")
+
+#: Файлы, ссылки в которых проверяются: страницы сайта и README.
+WATCHED_SOURCES = ("docs", "README.md")
+
+
+def check_anchors() -> tuple[list[str], int]:
+    """Проверяет, что якоря в ссылках существуют на целевых страницах.
+
+    Якорь не проверяет ни ``mkdocs build``, ни проверка ссылок: битый фрагмент
+    просто не сработает в браузере. Так в README оказалась ссылка ``#oshibki``,
+    которой на странице нет.
+
+    Разбираются ссылки двух видов: ``файл.md#якорь`` и ``#якорь`` (внутри
+    страницы). Русские заголовки MkDocs превращает в якоря сам, а имена членов
+    вида ``raclib.errors.UnknownError`` становятся якорями как есть.
+    """
+    problems: list[str] = []
+    total = 0
+    for page in _watched_pages():
+        text = page.read_text(encoding="utf-8")
+        for target, anchor in ANCHOR_RE.findall(text):
+            if target.startswith(("http://", "https://")) or anchor.startswith("/"):
+                continue
+            total += 1
+            target_path = page if not target else (page.parent / target).resolve()
+            if not target_path.exists():
+                problems.append(
+                    f"{page.relative_to(REPO_ROOT)}: ссылка на отсутствующую "
+                    f"страницу {target}#{anchor}"
+                )
+                continue
+            if not _has_anchor(target_path, anchor):
+                problems.append(
+                    f"{page.relative_to(REPO_ROOT)}: на странице "
+                    f"{target_path.relative_to(REPO_ROOT)} нет якоря #{anchor}"
+                )
+    return problems, total
+
+
+def _watched_pages() -> list[Path]:
+    """Возвращает страницы, ссылки в которых имеет смысл проверять."""
+    pages: list[Path] = []
+    for source in WATCHED_SOURCES:
+        path = REPO_ROOT / source
+        if path.is_dir():
+            pages.extend(sorted(path.rglob("*.md")))
+        elif path.exists():
+            pages.append(path)
+    return pages
+
+
+def _has_anchor(path: Path, anchor: str) -> bool:
+    """Ищет на странице заголовок или явный идентификатор с таким якорем.
+
+    MkDocs формирует идентификатор из текста заголовка: приводит его к нижнему
+    регистру, убирает пунктуацию и заменяет пробелы дефисами; русские буквы и
+    точки сохраняются. Поэтому ``## Ошибки`` даёт ``#ошибки``, а
+    ``## raclib.errors.UnknownError`` — одноимённый якорь.
+    """
+    wanted = anchor.lower()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            heading = stripped.lstrip("#").strip().replace("&para;", "")
+            if _slugify(heading) == _slugify(anchor):
+                return True
+        # Явный идентификатор: {#my-anchor}
+        if "{#" in stripped:
+            found = re.findall(r"\{#([^}]+)\}", stripped)
+            if any(value.lower() == wanted for value in found):
+                return True
+    return False
+
+
+def _slugify(text: str) -> str:
+    """Приводит заголовок к виду, который использует MkDocs для якорей."""
+    text = text.strip().strip("`*_").lower()
+    text = re.sub(r"[^\w\s.-]", "", text, flags=re.UNICODE)
+    return re.sub(r"\s+", "-", text).strip("-")
+
 
 def check_nav() -> list[str]:
     """Проверяет, что все страницы из nav существуют."""
@@ -102,8 +184,10 @@ def main() -> int:
     problems = check_nav()
     directive_problems, directives = check_directives()
     link_problems, links = check_links()
+    anchor_problems, anchors = check_anchors()
     problems.extend(directive_problems)
     problems.extend(link_problems)
+    problems.extend(anchor_problems)
 
     if problems:
         print("Проблемы в документации:", file=sys.stderr)
@@ -114,7 +198,8 @@ def main() -> int:
     print(
         f"Документация целостна: страниц в nav "
         f"{len(NAV_RE.findall(MKDOCS_YML.read_text(encoding='utf-8')))}, "
-        f"директив ::: {directives}, относительных ссылок {links}."
+        f"директив ::: {directives}, относительных ссылок {links}, "
+        f"ссылок с якорем {anchors}."
     )
     return 0
 

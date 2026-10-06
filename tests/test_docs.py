@@ -166,6 +166,35 @@ class DocumentationIntegrityTestCase(unittest.TestCase):
         problems, _ = self.tool.check_links()
         self.assertEqual(problems, [])
 
+    def test_anchors_exist_on_target_pages(self) -> None:
+        # Регрессия: в README была ссылка на #oshibki, которого на странице нет.
+        # Ни сборка, ни проверка ссылок такое не ловят — якорь просто не работает.
+        problems, _ = self.tool.check_anchors()
+        self.assertEqual(problems, [])
+
+    def test_anchor_checker_detects_broken_anchor(self) -> None:
+        # Проверяем саму проверку: она должна уметь падать.
+        with temp_dir() as tmp:
+            page = Path(tmp.name) / "sample.md"
+            page.write_text(
+                "# Раздел\n\n[битая ссылка](#nesushchestvuyushchiy-yakor)\n",
+                encoding="utf-8",
+            )
+            self.assertFalse(self.tool._has_anchor(page, "nesushchestvuyushchiy-yakor"))
+            self.assertTrue(self.tool._has_anchor(page, "раздел"))
+
+    def test_anchor_checker_understands_heading_slugs(self) -> None:
+        with temp_dir() as tmp:
+            page = Path(tmp.name) / "sample.md"
+            page.write_text(
+                "## Ошибки\n\n## raclib.errors.UnknownError\n",
+                encoding="utf-8",
+            )
+            # Русский заголовок: MkDocs сохраняет кириллицу в якоре.
+            self.assertTrue(self.tool._has_anchor(page, "ошибки"))
+            # Имя члена: якорь совпадает с текстом заголовка.
+            self.assertTrue(self.tool._has_anchor(page, "raclib.errors.UnknownError"))
+
     def test_removed_pdoc_artifacts_are_gone(self) -> None:
         # Раньше в репозитории лежало 4.4 МБ сгенерированного pdoc HTML.
         for stale in ("index.html", "raclib.html", "search.js"):

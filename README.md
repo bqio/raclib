@@ -124,7 +124,7 @@ except errors.UnknownError as exc:
     print("Незнакомая ошибка RAC:", exc)
 ```
 
-Полный список — в [справочнике по ошибкам](https://bqio.github.io/raclib/reference/utils/#oshibki).
+Полный список — в [справочнике по ошибкам](https://bqio.github.io/raclib/reference/utils/#raclib.errors.UnknownError).
 
 ## Документация
 
