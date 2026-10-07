@@ -41,7 +41,7 @@ class AsyncLock:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("lock"),
                 Arg(cluster, "--cluster={}"),
@@ -52,4 +52,4 @@ class AsyncLock:
                 Arg(connection, "--connection={}"),
                 Arg(infobase_session, "--session={}"),
             )
-        ).to_list()
+        )).to_list()

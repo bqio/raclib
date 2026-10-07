@@ -36,7 +36,7 @@ class AsyncServer:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("server"),
                 Arg(cluster, "--cluster={}"),
@@ -45,7 +45,7 @@ class AsyncServer:
                 Arg("info"),
                 Arg(server, "--server={}"),
             )
-        ).to_dict()
+        )).to_dict()
 
     @staticmethod
     async def list(
@@ -68,7 +68,7 @@ class AsyncServer:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("server"),
                 Arg(cluster, "--cluster={}"),
@@ -76,7 +76,7 @@ class AsyncServer:
                 Arg(cluster_pwd, "--cluster-pwd={}"),
                 Arg("list"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def insert(
@@ -137,7 +137,7 @@ class AsyncServer:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        server = await session.async_exec(
+        server = (await session.async_exec(
             Command(
                 Arg("server"),
                 Arg(cluster, "--cluster={}"),
@@ -178,7 +178,7 @@ class AsyncServer:
                     "--add-prohibiting-assignment-rule={}",
                 ),
             )
-        ).to_dict()
+        )).to_dict()
         return str(server["server"])
 
     @staticmethod

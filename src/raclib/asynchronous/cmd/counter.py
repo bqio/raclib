@@ -34,7 +34,7 @@ class AsyncCounter:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("counter"),
                 Arg(cluster, "--cluster={}"),
@@ -42,7 +42,7 @@ class AsyncCounter:
                 Arg(cluster_pwd, "--cluster-pwd={}"),
                 Arg("list"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def info(
@@ -67,7 +67,7 @@ class AsyncCounter:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("counter"),
                 Arg(cluster, "--cluster={}"),
@@ -76,7 +76,7 @@ class AsyncCounter:
                 Arg("info"),
                 Arg(counter, "--counter={}"),
             )
-        ).to_dict()
+        )).to_dict()
 
     @staticmethod
     async def update(
@@ -187,7 +187,7 @@ class AsyncCounter:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("counter"),
                 Arg(cluster, "--cluster={}"),
@@ -197,7 +197,7 @@ class AsyncCounter:
                 Arg(counter, "--counter={}"),
                 Arg(object, "--object={}"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def remove(
@@ -295,7 +295,7 @@ class AsyncCounter:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("counter"),
                 Arg(cluster, "--cluster={}"),
@@ -305,4 +305,4 @@ class AsyncCounter:
                 Arg(counter, "--counter={}"),
                 Arg(object, "--object={}"),
             )
-        ).to_list()
+        )).to_list()

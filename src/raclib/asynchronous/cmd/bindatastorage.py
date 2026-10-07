@@ -45,7 +45,7 @@ class AsyncBinaryDataStorage:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("binary-data-storage"),
                 Arg(cluster, "--cluster={}"),
@@ -58,7 +58,7 @@ class AsyncBinaryDataStorage:
                 Arg(storage, "--storage={}"),
                 Arg(name, "--name={}"),
             )
-        ).to_dict()
+        )).to_dict()
 
     @staticmethod
     async def list(
@@ -87,7 +87,7 @@ class AsyncBinaryDataStorage:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("binary-data-storage"),
                 Arg(cluster, "--cluster={}"),
@@ -98,7 +98,7 @@ class AsyncBinaryDataStorage:
                 Arg(infobase_pwd, "--infobase-pwd={}"),
                 Arg("list"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def create_full_backup(

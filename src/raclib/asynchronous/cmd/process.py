@@ -37,7 +37,7 @@ class AsyncProcess:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("process"),
                 Arg(cluster, "--cluster={}"),
@@ -47,7 +47,7 @@ class AsyncProcess:
                 Arg(process, "--process={}"),
                 Flag(licenses, "--licenses"),
             )
-        ).to_dict()
+        )).to_dict()
 
     @staticmethod
     async def list(
@@ -74,7 +74,7 @@ class AsyncProcess:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("process"),
                 Arg(cluster, "--cluster={}"),
@@ -84,4 +84,4 @@ class AsyncProcess:
                 Arg(server, "--server={}"),
                 Flag(licenses, "--licenses"),
             )
-        ).to_list()
+        )).to_list()

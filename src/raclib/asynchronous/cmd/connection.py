@@ -35,7 +35,7 @@ class AsyncConnection:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("connection"),
                 Arg(cluster, "--cluster={}"),
@@ -44,7 +44,7 @@ class AsyncConnection:
                 Arg("info"),
                 Arg(connection, "--connection={}"),
             )
-        ).to_dict()
+        )).to_dict()
 
     @staticmethod
     async def list(
@@ -77,7 +77,7 @@ class AsyncConnection:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("connection"),
                 Arg(cluster, "--cluster={}"),
@@ -89,7 +89,7 @@ class AsyncConnection:
                 Arg(infobase_user, "--infobase-user={}"),
                 Arg(infobase_pwd, "--infobase-pwd={}"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def disconnect(

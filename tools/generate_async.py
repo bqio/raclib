@@ -82,33 +82,84 @@ def rewrite_imports(source: str) -> str:
 
 
 def add_await_to_session_calls(source: str) -> str:
-    """``session.exec(...)`` → ``await session.async_exec(...)``.
+    """Переписывает обращения к сессии так, чтобы ``await`` стоял правильно.
 
     Синхронный код во всех командах построен по шаблону
-    ``return session.exec(...).to_list()``. В асинхронной ветке вызов нужно
-    дождаться, поэтому ``await`` ставится непосредственно перед вызовом, а
-    ``.to_dict()``/``.to_list()``/``.to_str()`` продолжают работать поверх
-    дождавшегося объекта.
+    ``return session.exec(...).to_list()``. Наивная замена даёт
+    ``return await session.async_exec(...).to_list()`` — код синтаксически
+    верный, но **неверный по смыслу**: ``await`` применяется только к
+    ``async_exec``, а ``.to_list()`` вызывается у корутины. Раньше именно так и
+    генерировалась вся асинхронная ветка, поэтому ни один её метод не работал.
+
+    Правильная запись — ``return (await session.async_exec(...)).to_list()``:
+    ожидание охватывает вызов, а пост-обработка применяется к результату.
+
+    Преобразование текстовое, а не через ``ast.unparse``: последний схлопывает
+    многострочные вызовы ``Command(...)`` в одну строку и разрушает читаемость
+    сгенерированного кода.
     """
-    source = re.sub(r"(?<![\w.])session\.exec\(", "await session.async_exec(", source)
-    source = re.sub(r"(?<![\w.])session\.call\(", "await session.async_call(", source)
+    for name, attr in (("exec", "async_exec"), ("call", "async_call")):
+        while True:
+            converted = _rewrite_one_session_call(source, name, attr)
+            if converted is None:
+                # Важно: выходим только из цикла по этому имени. Раньше здесь
+                # стоял `return source`, из-за чего после первого же имени
+                # (`exec`) второе (`call`) не обрабатывалось вовсе.
+                break
+            source = converted
     return source
+
+
+def _find_matching_bracket(text: str, open_index: int) -> int:
+    """Возвращает индекс закрывающей скобки, парной к ``text[open_index]``."""
+    depth = 0
+    for index in range(open_index, len(text)):
+        char = text[index]
+        if char in "([{":
+            depth += 1
+        elif char in ")]}":
+            depth -= 1
+            if depth == 0:
+                return index
+    return -1
+
+
+def _rewrite_one_session_call(source: str, name: str, attr: str) -> str | None:
+    """Оборачивает первое найденное обращение к сессии в ``await``.
+
+    Возвращает ``None``, если обращений больше нет.
+    """
+    pattern = re.compile(rf"(?<![\w.])session\.{name}\(")
+    match = pattern.search(source)
+    if match is None:
+        return None
+
+    open_index = source.index("(", match.start())
+    close_index = _find_matching_bracket(source, open_index)
+    if close_index == -1:
+        raise ValueError(f"Не найдена закрывающая скобка для session.{name}")
+
+    call = source[open_index : close_index + 1]
+    rest = source[close_index + 1 :]
+    # Скобки вокруг ожидания нужны только при пост-обработке результата
+    # (`.to_dict()`, `.to_list()`, `.to_str()`): тогда дожидаемся вызова и уже
+    # у результата вызываем метод. Без пост-обработки скобки вредны — метод
+    # вернул бы не результат, а корутину.
+    if re.match(r"\s*\.\s*to_\w+\(", rest):
+        awaited = f"(await session.{attr}{call})"
+    else:
+        awaited = f"await session.{attr}{call}"
+
+    return f"{source[: match.start()]}{awaited}{rest}"
 
 
 def make_functions_async(source: str) -> str:
-    """Превращает ``def`` / ``return`` с ``await`` в асинхронные.
+    """Превращает ``def`` в ``async def``.
 
-    Порядок важен: сначала добавляются ``await``, затем ``def`` становится
-    ``async def``, и только потом в ``return`` подставляется ``await`` — но
-    только там, где ожидание ещё не проставлено.
+    Ожидание уже расставлено :func:`add_await_to_session_calls`, поэтому здесь
+    остаётся только заменить заголовки функций.
     """
-    source = re.sub(r"(?<![\w.])def ", "async def ", source)
-    source = re.sub(
-        r"(?m)^([ \t]*)return (?!await\b)(?=.*\bawait\b)",
-        r"\1return await ",
-        source,
-    )
-    return source
+    return re.sub(r"(?<![\w.])def ", "async def ", source)
 
 
 def rename_async_identifiers(source: str) -> str:

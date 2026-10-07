@@ -34,7 +34,7 @@ class AsyncProfile:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("profile"),
                 Arg(cluster, "--cluster={}"),
@@ -42,7 +42,7 @@ class AsyncProfile:
                 Arg(cluster_pwd, "--cluster-pwd={}"),
                 Arg("list"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def update(
@@ -187,7 +187,7 @@ class AsyncProfile:
                 :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
                 :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
                 """
-                return await session.async_exec(
+                return (await session.async_exec(
                     Command(
                         Arg("profile"),
                         Arg(cluster, "--cluster={}"),
@@ -199,7 +199,7 @@ class AsyncProfile:
                         Arg("list"),
                         Arg(access, "--access={}"),
                     )
-                ).to_list()
+                )).to_list()
 
             @staticmethod
             async def update(
@@ -327,7 +327,7 @@ class AsyncProfile:
                 :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
                 :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
                 """
-                return await session.async_exec(
+                return (await session.async_exec(
                     Command(
                         Arg("profile"),
                         Arg(cluster, "--cluster={}"),
@@ -339,7 +339,7 @@ class AsyncProfile:
                         Arg("list"),
                         Arg(access, "--access={}"),
                     )
-                ).to_list()
+                )).to_list()
 
             @staticmethod
             async def update(
@@ -465,7 +465,7 @@ class AsyncProfile:
                 :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
                 :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
                 """
-                return await session.async_exec(
+                return (await session.async_exec(
                     Command(
                         Arg("profile"),
                         Arg(cluster, "--cluster={}"),
@@ -477,7 +477,7 @@ class AsyncProfile:
                         Arg("list"),
                         Arg(access, "--access={}"),
                     )
-                ).to_list()
+                )).to_list()
 
             @staticmethod
             async def update(
@@ -597,7 +597,7 @@ class AsyncProfile:
                 :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
                 :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
                 """
-                return await session.async_exec(
+                return (await session.async_exec(
                     Command(
                         Arg("profile"),
                         Arg(cluster, "--cluster={}"),
@@ -609,7 +609,7 @@ class AsyncProfile:
                         Arg("list"),
                         Arg(access, "--access={}"),
                     )
-                ).to_list()
+                )).to_list()
 
             @staticmethod
             async def update(
@@ -729,7 +729,7 @@ class AsyncProfile:
                 :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
                 :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
                 """
-                return await session.async_exec(
+                return (await session.async_exec(
                     Command(
                         Arg("profile"),
                         Arg(cluster, "--cluster={}"),
@@ -741,7 +741,7 @@ class AsyncProfile:
                         Arg("list"),
                         Arg(access, "--access={}"),
                     )
-                ).to_list()
+                )).to_list()
 
             @staticmethod
             async def update(
@@ -861,7 +861,7 @@ class AsyncProfile:
                 :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
                 :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
                 """
-                return await session.async_exec(
+                return (await session.async_exec(
                     Command(
                         Arg("profile"),
                         Arg(cluster, "--cluster={}"),
@@ -873,7 +873,7 @@ class AsyncProfile:
                         Arg("list"),
                         Arg(access, "--access={}"),
                     )
-                ).to_list()
+                )).to_list()
 
             @staticmethod
             async def update(

@@ -37,7 +37,7 @@ class AsyncCluster:
             :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
             :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
             """
-            return await session.async_exec(
+            return (await session.async_exec(
                 Command(
                     Arg("cluster"),
                     Arg("admin"),
@@ -46,7 +46,7 @@ class AsyncCluster:
                     Arg(cluster_pwd, "--cluster-pwd={}"),
                     Arg("list"),
                 )
-            ).to_list()
+            )).to_list()
 
         @staticmethod
         async def register(
@@ -146,13 +146,13 @@ class AsyncCluster:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("cluster"),
                 Arg("info"),
                 Arg(cluster, "--cluster={}"),
             )
-        ).to_dict()
+        )).to_dict()
 
     @staticmethod
     async def list(session: AsyncSession) -> list[RacRecord]:
@@ -165,12 +165,12 @@ class AsyncCluster:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("cluster"),
                 Arg("list"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def insert(
@@ -225,7 +225,7 @@ class AsyncCluster:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        cluster = await session.async_exec(
+        cluster = (await session.async_exec(
             Command(
                 Arg("cluster"),
                 Arg("insert"),
@@ -253,7 +253,7 @@ class AsyncCluster:
                 Arg(agent_user, "--agent-user={}"),
                 Arg(agent_pwd, "--agent-pwd={}"),
             )
-        ).to_dict()
+        )).to_dict()
         return str(cluster["cluster"])
 
     @staticmethod

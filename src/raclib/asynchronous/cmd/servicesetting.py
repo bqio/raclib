@@ -37,7 +37,7 @@ class AsyncServiceSetting:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("service-setting"),
                 Arg(cluster, "--cluster={}"),
@@ -47,7 +47,7 @@ class AsyncServiceSetting:
                 Arg("info"),
                 Arg(setting, "--setting={}"),
             )
-        ).to_dict()
+        )).to_dict()
 
     @staticmethod
     async def list(
@@ -72,7 +72,7 @@ class AsyncServiceSetting:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("service-setting"),
                 Arg(cluster, "--cluster={}"),
@@ -81,7 +81,7 @@ class AsyncServiceSetting:
                 Arg(cluster_pwd, "--cluster-pwd={}"),
                 Arg("list"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def insert(
@@ -193,7 +193,7 @@ class AsyncServiceSetting:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("service-setting"),
                 Arg(cluster, "--cluster={}"),
@@ -203,7 +203,7 @@ class AsyncServiceSetting:
                 Arg("get-service-data-dirs-for-transfer"),
                 Arg(service_name, "--service-name={}"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def remove(

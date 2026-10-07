@@ -71,7 +71,7 @@ class AsyncRule:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("rule"),
                 Arg(cluster, "--cluster={}"),
@@ -81,7 +81,7 @@ class AsyncRule:
                 Arg(server, "--server={}"),
                 Arg(rule, "--rule={}"),
             )
-        ).to_dict()
+        )).to_dict()
 
     @staticmethod
     async def list(
@@ -106,7 +106,7 @@ class AsyncRule:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("rule"),
                 Arg(cluster, "--cluster={}"),
@@ -115,7 +115,7 @@ class AsyncRule:
                 Arg("list"),
                 Arg(server, "--server={}"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def insert(
@@ -154,7 +154,7 @@ class AsyncRule:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        rule = await session.async_exec(
+        rule = (await session.async_exec(
             Command(
                 Arg("rule"),
                 Arg(cluster, "--cluster={}"),
@@ -169,7 +169,7 @@ class AsyncRule:
                 Arg(application_ext, "--application-ext={}"),
                 Arg(priority, "--priority={}"),
             )
-        ).to_dict()
+        )).to_dict()
         return str(rule["rule"])
 
     @staticmethod

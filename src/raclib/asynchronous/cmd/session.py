@@ -37,7 +37,7 @@ class AsyncUserSession:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("session"),
                 Arg(cluster, "--cluster={}"),
@@ -47,7 +47,7 @@ class AsyncUserSession:
                 Arg(user_session, "--session={}"),
                 Flag(licenses, "--licenses"),
             )
-        ).to_dict()
+        )).to_dict()
 
     @staticmethod
     async def list(
@@ -76,7 +76,7 @@ class AsyncUserSession:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("session"),
                 Arg(cluster, "--cluster={}"),
@@ -86,7 +86,7 @@ class AsyncUserSession:
                 Arg(infobase, "--infobase={}"),
                 Flag(licenses, "--licenses"),
             )
-        ).to_list()
+        )).to_list()
 
     @staticmethod
     async def terminate(

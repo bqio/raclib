@@ -44,7 +44,7 @@ class AsyncInfobase:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(
+        return (await session.async_exec(
             Command(
                 Arg("infobase"),
                 Arg(cluster, "--cluster={}"),
@@ -56,7 +56,7 @@ class AsyncInfobase:
                 Arg(infobase_user, "--infobase-user={}"),
                 Arg(infobase_pwd, "--infobase-pwd={}"),
             )
-        ).to_dict()
+        )).to_dict()
 
     class Summary:
         """Сводки по информационным базам кластера.
@@ -88,7 +88,7 @@ class AsyncInfobase:
             :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
             :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
             """
-            return await session.async_exec(
+            return (await session.async_exec(
                 Command(
                     Arg("infobase"),
                     Arg(cluster, "--cluster={}"),
@@ -99,7 +99,7 @@ class AsyncInfobase:
                     Arg(infobase, "--infobase={}"),
                     Arg(name, "--name={}"),
                 )
-            ).to_dict()
+            )).to_dict()
 
         @staticmethod
         async def list(
@@ -122,7 +122,7 @@ class AsyncInfobase:
             :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
             :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
             """
-            return await session.async_exec(
+            return (await session.async_exec(
                 Command(
                     Arg("infobase"),
                     Arg(cluster, "--cluster={}"),
@@ -131,7 +131,7 @@ class AsyncInfobase:
                     Arg("summary"),
                     Arg("list"),
                 )
-            ).to_list()
+            )).to_list()
 
         @staticmethod
         async def update(
@@ -223,7 +223,7 @@ class AsyncInfobase:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        infobase = await session.async_exec(
+        infobase = (await session.async_exec(
             Command(
                 Arg("infobase"),
                 Arg(cluster, "--cluster={}"),
@@ -244,7 +244,7 @@ class AsyncInfobase:
                 Arg(b2of(scheduled_jobs_deny), "--scheduled-jobs-deny={}"),
                 Arg(b2da(license_distribution), "--license-distribution={}"),
             )
-        ).to_dict()
+        )).to_dict()
         return str(infobase["infobase"])
 
     @staticmethod

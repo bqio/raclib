@@ -34,7 +34,7 @@ class AsyncAgent:
             :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
             :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
             """
-            return await session.async_exec(
+            return (await session.async_exec(
                 Command(
                     Arg("agent"),
                     Arg(agent_user, "--agent-user={}"),
@@ -42,7 +42,7 @@ class AsyncAgent:
                     Arg("admin"),
                     Arg("list"),
                 )
-            ).to_list()
+            )).to_list()
 
         @staticmethod
         async def register(
@@ -133,4 +133,4 @@ class AsyncAgent:
         :raises raclib.errors.RACTimeoutError: RAC не ответил за ``timeout`` секунд, заданный в сессии.
         :raises raclib.errors.UnknownError: RAC вернул ошибку, которой нет в таблице соответствий ``raclib.errors``.
         """
-        return await session.async_exec(Command(Arg("agent"), Arg("version"))).to_str()
+        return (await session.async_exec(Command(Arg("agent"), Arg("version")))).to_str()
