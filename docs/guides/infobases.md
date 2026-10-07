@@ -124,30 +124,21 @@ rc.Infobase.drop(session, cluster, infobase_id)
 ```
 
 По умолчанию из кластера удаляется **только регистрация** базы: база данных на
-сервере СУБД остаётся нетронутой. Чтобы удалить или очистить и её, нужны
-учётные данные сервера СУБД:
+сервере СУБД остаётся нетронутой. Чтобы удалить или очистить и её, добавьте
+соответствующий флаг:
 
 ```python
 # Удалить и регистрацию, и саму базу данных
-rc.Infobase.drop(
-    session,
-    cluster,
-    infobase_id,
-    db_user="postgres",
-    db_pwd="pg-secret",
-    drop_database=True,
-)
+rc.Infobase.drop(session, cluster, infobase_id, drop_database=True)
 
 # Очистить данные, оставив базу данных существовать
-rc.Infobase.drop(
-    session,
-    cluster,
-    infobase_id,
-    db_user="postgres",
-    db_pwd="pg-secret",
-    clear_database=True,
-)
+rc.Infobase.drop(session, cluster, infobase_id, clear_database=True)
 ```
+
+Отдельные учётные данные сервера СУБД передавать не нужно: `rac infobase drop`
+использует параметры подключения, уже сохранённые в информационной базе
+(`db_server`, `db_name`, `db_user`, `db_pwd` задаются при создании или
+обновлении базы).
 
 !!! danger "Проверьте, что вам нужен `drop_database`"
 

@@ -134,15 +134,16 @@ class CommandIntegrationTestCase(unittest.TestCase):
         )
         self.assertIn("--create-database", session.calls[0])
 
-    def test_infobase_drop_accepts_database_credentials(self) -> None:
-        # Регрессия: параметры db_user/db_pwd отсутствовали, и попытка их
-        # передать приводила к TypeError, а сама команда уходила без них.
+    def test_infobase_drop_does_not_send_unknown_db_credentials(self) -> None:
+        # Регрессия: в 1.2.0 метод отправлял --db-user и --db-pwd, которых
+        # `rac infobase drop` не знает (сверено с `rac help infobase`).
+        # Учётные данные сервера СУБД берутся из самой информационной базы.
         session = RecordingSession()
-        Infobase.drop(
-            session, "cl-1", "ib-1", db_user="postgres", db_pwd="pg-secret"
-        )
-        self.assertIn("--db-user=postgres", session.calls[0])
-        self.assertIn("--db-pwd=pg-secret", session.calls[0])
+        Infobase.drop(session, "cl-1", "ib-1", drop_database=True)
+        argv = session.calls[0]
+        self.assertFalse([item for item in argv if item.startswith("--db-user")])
+        self.assertFalse([item for item in argv if item.startswith("--db-pwd")])
+        self.assertIn("--drop-database", argv)
 
     def test_infobase_drop_flags(self) -> None:
         session = RecordingSession()

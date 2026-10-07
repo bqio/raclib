@@ -392,8 +392,6 @@ class AsyncInfobase:
         name: str | None = None,
         infobase_user: str | None = None,
         infobase_pwd: str | None = None,
-        db_user: str | None = None,
-        db_pwd: str | None = None,
         drop_database: bool = False,
         clear_database: bool = False,
         cluster_user: str | None = None,
@@ -401,7 +399,7 @@ class AsyncInfobase:
     ) -> None:
         """Удаляет информационную базу из кластера.
 
-        По умолчанию удаляется только запись о базе в кластере. Чтобы удалить или очистить саму базу данных на сервере СУБД, передайте ``drop_database=True`` или ``clear_database=True``; для этого нужны ``db_user`` и ``db_pwd``.
+        По умолчанию удаляется только запись о базе в кластере. Чтобы удалить или очистить саму базу данных на сервере СУБД, передайте ``drop_database=True`` или ``clear_database=True``. Отдельные учётные данные сервера баз данных не нужны: RAC использует параметры подключения, сохранённые в информационной базе.
 
         Args:
             cluster: Идентификатор (UUID) кластера.
@@ -409,8 +407,6 @@ class AsyncInfobase:
             name: Имя информационной базы в кластере.
             infobase_user: Имя пользователя информационной базы.
             infobase_pwd: Пароль пользователя информационной базы.
-            db_user: Имя пользователя сервера баз данных; нужен при удалении базы данных.
-            db_pwd: Пароль пользователя сервера баз данных.
             drop_database: Удалить базу данных на сервере СУБД.
             clear_database: Очистить базу данных на сервере СУБД, оставив её саму.
             cluster_user: Имя администратора кластера.
@@ -434,8 +430,6 @@ class AsyncInfobase:
                 Arg(name, "--name={}"),
                 Arg(infobase_user, "--infobase-user={}"),
                 Arg(infobase_pwd, "--infobase-pwd={}"),
-                Arg(db_user, "--db-user={}"),
-                Arg(db_pwd, "--db-pwd={}"),
                 Flag(drop_database, "--drop-database"),
                 Flag(clear_database, "--clear-database"),
             )

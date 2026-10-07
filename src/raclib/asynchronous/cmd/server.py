@@ -92,7 +92,7 @@ class AsyncServer:
         connections_limit: int = 256,
         cluster_port: int | None = None,
         dedicate_managers: str = "all",
-        safe_working_processess_memory_limit: int | None = None,
+        safe_working_processes_memory_limit: int | None = None,
         safe_call_memory_limit: int | None = None,
         critical_total_memory: int | None = None,
         temporary_allowed_total_memory: int | None = None,
@@ -119,7 +119,7 @@ class AsyncServer:
             connections_limit: Максимальное число соединений на процесс.
             cluster_port: Порт, на котором сервер слушает кластер.
             dedicate_managers: Выделять менеджеры: ``all``, ``none`` или ``isolated``.
-            safe_working_processess_memory_limit: Порог памяти рабочего процесса для безопасного режима.
+            safe_working_processes_memory_limit: Порог памяти рабочего процесса для безопасного режима.
             safe_call_memory_limit: Порог памяти вызова для безопасного режима.
             critical_total_memory: Критический общий объём памяти.
             temporary_allowed_total_memory: Временно разрешённый общий объём памяти.
@@ -155,8 +155,8 @@ class AsyncServer:
                 Arg(cluster_port, "--cluster-port={}"),
                 Arg(dedicate_managers, "--dedicate-managers={}"),
                 Arg(
-                    safe_working_processess_memory_limit,
-                    "--safe-working-processess-memory-limit={}",
+                    safe_working_processes_memory_limit,
+                    "--safe-working-processes-memory-limit={}",
                 ),
                 Arg(safe_call_memory_limit, "--safe-call-memory-limit={}"),
                 Arg(critical_total_memory, "--critical-total-memory={}"),
@@ -192,7 +192,7 @@ class AsyncServer:
         memory_limit: int | None = None,
         connections_limit: int | None = None,
         dedicate_managers: str | None = None,
-        safe_working_processess_memory_limit: int | None = None,
+        safe_working_processes_memory_limit: int | None = None,
         safe_call_memory_limit: int | None = None,
         critical_total_memory: int | None = None,
         temporary_allowed_total_memory: int | None = None,
@@ -215,7 +215,7 @@ class AsyncServer:
             memory_limit: Максимальный объём памяти рабочих процессов в КБ.
             connections_limit: Максимальное число соединений на процесс.
             dedicate_managers: Выделять менеджеры: ``all``, ``none`` или ``isolated``.
-            safe_working_processess_memory_limit: Порог памяти рабочего процесса для безопасного режима.
+            safe_working_processes_memory_limit: Порог памяти рабочего процесса для безопасного режима.
             safe_call_memory_limit: Порог памяти вызова для безопасного режима.
             critical_total_memory: Критический общий объём памяти.
             temporary_allowed_total_memory: Временно разрешённый общий объём памяти.
@@ -247,8 +247,8 @@ class AsyncServer:
                 Arg(memory_limit, "--memory-limit={}"),
                 Arg(connections_limit, "--connections-limit={}"),
                 Arg(
-                    safe_working_processess_memory_limit,
-                    "--safe-working-processess-memory-limit={}",
+                    safe_working_processes_memory_limit,
+                    "--safe-working-processes-memory-limit={}",
                 ),
                 Arg(safe_call_memory_limit, "--safe-call-memory-limit={}"),
                 Arg(critical_total_memory, "--critical-total-memory={}"),
